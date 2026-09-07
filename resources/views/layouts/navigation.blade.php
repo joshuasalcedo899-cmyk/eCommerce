@@ -6,7 +6,7 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : route('store.index') }}">
-                        <img src="{{ asset('images/Like_black.png') }}" alt="{{ config('app.name', 'E-Commerce') }}"
+                        <img src="{{ asset('image/like.png') }}" alt="{{ config('app.name', 'E-Commerce') }}"
                             class="block h-9 w-auto object-contain" />
                     </a>
                 </div>

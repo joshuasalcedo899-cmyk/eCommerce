@@ -17,8 +17,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="h-16 flex items-center justify-between">
 
-                <a href="{{ route('store.index') }}" class="text-xl font-bold">
-                    {{ config('app.name', 'E-Commerce') }}
+                <a href="{{ route('store.index') }}" class="inline-flex items-center">
+                    <img src="{{ asset('image/like.png') }}" alt="{{ config('app.name', 'E-Commerce') }}"
+                        class="h-9 w-auto object-contain">
                 </a>
 
                 <a href="{{ route('store.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
