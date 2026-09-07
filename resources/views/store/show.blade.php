@@ -12,6 +12,24 @@
 
 <body class="bg-gray-100 text-gray-900">
 
+    @if (session('success') || session('error'))
+        <div x-data="{ visible: true }" x-init="setTimeout(() => visible = false, 5000)" x-show="visible"
+            x-transition.opacity.duration.200ms role="status" aria-live="polite"
+            class="fixed right-4 top-4 z-50 flex max-w-sm items-start gap-3 rounded-lg border bg-white px-4 py-3 shadow-lg {{ session('error') ? 'border-red-200' : 'border-green-200' }}">
+            <span class="mt-0.5 text-lg {{ session('error') ? 'text-red-600' : 'text-green-600' }}" aria-hidden="true">
+                {{ session('error') ? '!' : '✓' }}
+            </span>
+            <p class="flex-1 text-sm font-medium text-gray-800">
+                {{ session('error') ?: session('success') }}
+            </p>
+            <button type="button" @click="visible = false"
+                class="-mr-1 -mt-1 rounded p-1 text-xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Dismiss notification">
+                &times;
+            </button>
+        </div>
+    @endif
+
     {{-- Navigation --}}
     <nav class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -22,9 +40,15 @@
                         class="h-9 w-auto object-contain">
                 </a>
 
-                <a href="{{ route('store.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
-                    ← Back to Products
-                </a>
+                <div>
+                    <a href="{{ route('cart.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                        Cart
+                    </a>
+
+                    <a href="{{ route('store.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                        ← Back to Products
+                    </a>
+                </div>
 
             </div>
         </div>
