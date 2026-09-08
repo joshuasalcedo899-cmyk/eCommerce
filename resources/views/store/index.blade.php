@@ -12,21 +12,29 @@
 
 <body class="bg-gray-100 text-gray-900">
 
-    {{-- Navigation --}}
+    @include('layouts.navigation')
+    @if (false)
+    {{-- Legacy navigation --}}
     <nav class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="h-16 flex items-center justify-between">
-
                 <a href="{{ route('store.index') }}" class="inline-flex items-center">
                     <img src="{{ asset('image/like.png') }}" alt="{{ config('app.name', 'E-Commerce') }}"
                         class="h-9 w-auto object-contain">
                 </a>
 
                 <div class="flex items-center gap-4">
+                    <a href="{{ route('store.index') }}" class="font-semibold text-sm text-gray-900">
+                        Shop
+                    </a>
                     <a href="{{ route('cart.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
                         Cart
                     </a>
                     @auth
+                        <a href="{{ route('orders.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                            Purchase History
+                        </a>
+
                         <x-dropdown align="right" width="48">
                             <x-slot name="trigger">
                                 <button
@@ -54,7 +62,7 @@
                                     @csrf
 
                                     <x-dropdown-link :href="route('logout')" onclick="event.preventDefault();
-                                                    this.closest('form').submit();">
+                                                                        this.closest('form').submit();">
                                         {{ __('Log Out') }}
                                     </x-dropdown-link>
                                 </form>
@@ -74,6 +82,7 @@
             </div>
         </div>
     </nav>
+    @endif
 
     {{-- Main --}}
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

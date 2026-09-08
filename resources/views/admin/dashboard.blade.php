@@ -86,6 +86,105 @@
 
             </div>
 
+            {{-- Sales Analytics --}}
+            <div class="mt-8">
+                <div class="flex items-end justify-between mb-4">
+                    <div>
+                        <h3 class="font-semibold text-gray-900">
+                            Sales Analytics
+                        </h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Cancelled orders are excluded from sales figures.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
+                        <p class="text-sm font-medium text-gray-500">Sales today</p>
+                        <p class="mt-2 text-2xl font-bold text-gray-900">
+                            PHP {{ number_format($salesToday, 2) }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
+                        <p class="text-sm font-medium text-gray-500">Sales this month</p>
+                        <p class="mt-2 text-2xl font-bold text-gray-900">
+                            PHP {{ number_format($salesThisMonth, 2) }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
+                        <p class="text-sm font-medium text-gray-500">Average order value</p>
+                        <p class="mt-2 text-2xl font-bold text-gray-900">
+                            PHP {{ number_format($averageOrderValue, 2) }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
+                        <p class="text-sm font-medium text-gray-500">Items sold</p>
+                        <p class="mt-2 text-2xl font-bold text-gray-900">
+                            {{ number_format($totalItemsSold) }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div class="rounded-lg bg-white border border-gray-200 shadow-sm lg:col-span-2">
+                        <div class="border-b border-gray-200 px-6 py-4">
+                            <h3 class="font-semibold text-gray-900">Last 7 days</h3>
+                        </div>
+
+                        <div class="space-y-4 p-6">
+                            @foreach ($salesTrend as $day)
+                                <div class="grid grid-cols-[3.5rem_1fr_auto] items-center gap-3 text-sm">
+                                    <span class="text-gray-500">{{ $day['date'] }}</span>
+                                    <div class="h-3 overflow-hidden rounded-full bg-gray-100">
+                                        <div
+                                            class="h-full rounded-full bg-gray-800"
+                                            style="width: {{ ($day['revenue'] / $maxTrendRevenue) * 100 }}%"
+                                        ></div>
+                                    </div>
+                                    <span class="min-w-28 text-right font-medium text-gray-900">
+                                        PHP {{ number_format($day['revenue'], 2) }}
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg bg-white border border-gray-200 shadow-sm">
+                        <div class="border-b border-gray-200 px-6 py-4">
+                            <h3 class="font-semibold text-gray-900">Top-selling products</h3>
+                        </div>
+
+                        @if ($topSellingProducts->isEmpty())
+                            <div class="p-6 text-sm text-gray-500">
+                                No sales data yet.
+                            </div>
+                        @else
+                            <div class="divide-y divide-gray-200">
+                                @foreach ($topSellingProducts as $product)
+                                    <div class="flex items-center justify-between gap-4 px-6 py-4">
+                                        <div class="min-w-0">
+                                            <p class="truncate font-medium text-gray-900">
+                                                {{ $product->product_name }}
+                                            </p>
+                                            <p class="text-sm text-gray-500">
+                                                {{ number_format($product->units_sold) }} units sold
+                                            </p>
+                                        </div>
+                                        <span class="shrink-0 text-sm font-medium text-gray-900">
+                                            PHP {{ number_format($product->revenue, 2) }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
             {{-- Order Status --}}
             <div class="mt-8">
                 <div class="rounded-lg bg-white border border-gray-200 shadow-sm">

@@ -42,7 +42,7 @@ class StorefrontController extends Controller
         return view('store.index', compact('products', 'categories'));
     }
 
-    public function show(Product $product): View
+    public function show(Request $request, Product $product): View
     {
         abort_unless(
             $product->is_active && $product->stock > 0,
@@ -50,6 +50,19 @@ class StorefrontController extends Controller
         );
 
         $product->load(['category', 'images']);
+
+        $reviews = $product->reviews()
+            ->with('user')
+            ->latest()
+            ->get();
+        $averageRating = round((float) $reviews->avg('rating'), 1);
+        $hasPurchased = $request->user()?->orders()
+            ->whereNotIn('status', ['cancelled'])
+            ->whereHas('items', fn ($query) => $query->where('product_id', $product->id))
+            ->exists() ?? false;
+        $existingReview = $request->user()
+            ? $reviews->firstWhere('user_id', $request->user()->id)
+            : null;
 
         $relatedProducts = Product::with('images')
             ->where('category_id', $product->category_id)
@@ -62,7 +75,7 @@ class StorefrontController extends Controller
 
         return view(
             'store.show',
-            compact('product', 'relatedProducts')
+            compact('product', 'relatedProducts', 'reviews', 'averageRating', 'hasPurchased', 'existingReview')
         );
     }
 }

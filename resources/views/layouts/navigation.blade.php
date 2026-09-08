@@ -5,7 +5,7 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : route('store.index') }}">
+                    <a href="{{ auth()->check() && auth()->user()->role === 'admin' ? route('admin.dashboard') : route('store.index') }}">
                         <img src="{{ asset('image/like.png') }}" alt="{{ config('app.name', 'E-Commerce') }}"
                             class="block h-9 w-auto object-contain" />
                     </a>
@@ -13,16 +13,22 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    @if (auth()->user()->role === 'admin')
+                    @if (auth()->check() && auth()->user()->role === 'admin')
                         <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                             {{ __('Dashboard') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')">
+                            {{ __('Products') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
+                            {{ __('Categories') }}
                         </x-nav-link>
                     @else
                         <x-nav-link :href="route('store.index')" :active="request()->routeIs('store.index', 'store.show')">
                             {{ __('Shop') }}
                         </x-nav-link>
                         <x-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
-                            {{ __('Orders') }}
+                            {{ __('Purchase History') }}
                         </x-nav-link>
                         <x-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
                             {{ __('Cart') }}
@@ -33,6 +39,12 @@
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
+                @guest
+                    <div class="flex items-center gap-4">
+                        <a href="{{ route('login') }}" class="text-sm text-gray-600 hover:text-gray-900">Login</a>
+                        <a href="{{ route('register') }}" class="text-sm text-gray-600 hover:text-gray-900">Register</a>
+                    </div>
+                @else
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button
@@ -66,6 +78,7 @@
                         </form>
                     </x-slot>
                 </x-dropdown>
+                @endguest
             </div>
 
             <!-- Hamburger -->
@@ -87,16 +100,19 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            @if (auth()->user()->role === 'admin')
-                <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                    {{ __('Dashboard') }}
+            @if (auth()->check() && auth()->user()->role === 'admin')
+                <x-responsive-nav-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')">
+                    {{ __('Products') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
+                    {{ __('Categories') }}
                 </x-responsive-nav-link>
             @else
                 <x-responsive-nav-link :href="route('store.index')" :active="request()->routeIs('store.index', 'store.show')">
                     {{ __('Shop') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
-                    {{ __('Orders') }}
+                    {{ __('Purchase History') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
                     {{ __('Cart') }}
@@ -106,6 +122,12 @@
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
+            @guest
+                <div class="space-y-1 px-4">
+                    <x-responsive-nav-link :href="route('login')">{{ __('Login') }}</x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('register')">{{ __('Register') }}</x-responsive-nav-link>
+                </div>
+            @else
             <div class="px-4">
                 <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
@@ -126,6 +148,7 @@
                     </x-responsive-nav-link>
                 </form>
             </div>
+            @endguest
         </div>
     </div>
 </nav>

@@ -30,29 +30,77 @@
         </div>
     @endif
 
-    {{-- Navigation --}}
+    @include('layouts.navigation')
+    @if (false)
+    {{-- Legacy navigation --}}
     <nav class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="h-16 flex items-center justify-between">
-
                 <a href="{{ route('store.index') }}" class="inline-flex items-center">
                     <img src="{{ asset('image/like.png') }}" alt="{{ config('app.name', 'E-Commerce') }}"
                         class="h-9 w-auto object-contain">
                 </a>
 
-                <div>
+                <div class="flex items-center gap-4">
+                    <a href="{{ route('store.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                        Shop
+                    </a>
                     <a href="{{ route('cart.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
                         Cart
                     </a>
+                    @auth
+                        <a href="{{ route('orders.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                            Purchase History
+                        </a>
 
-                    <a href="{{ route('store.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
-                        ← Back to Products
-                    </a>
+                        <x-dropdown align="right" width="48">
+                            <x-slot name="trigger">
+                                <button
+                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                                    <div>{{ Auth::user()->name }}</div>
+
+                                    <div class="ms-1">
+                                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            </x-slot>
+
+                            <x-slot name="content">
+                                <x-dropdown-link :href="route('profile.edit')">
+                                    {{ __('Profile') }}
+                                </x-dropdown-link>
+
+                                <!-- Authentication -->
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+
+                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault();
+                                                                        this.closest('form').submit();">
+                                        {{ __('Log Out') }}
+                                    </x-dropdown-link>
+                                </form>
+                            </x-slot>
+                        </x-dropdown>
+                    @else
+                        <a href="{{ route('login') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                            Login
+                        </a>
+
+                        <a href="{{ route('register') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                            Register
+                        </a>
+                    @endauth
                 </div>
 
             </div>
         </div>
     </nav>
+    @endif
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
@@ -153,7 +201,7 @@
                             <input id="quantity" name="quantity" type="number" min="1" max="{{ $product->stock }}"
                                 value="1" class="w-24 rounded-md border-gray-300">
 
-                            <button type="submit"
+                            <button type="submit" href="{{ route('cart.index') }}"
                                 class="flex-1 px-6 py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700">
                                 Add to Cart
                             </button>
@@ -166,6 +214,95 @@
             </div>
 
         </div>
+
+        {{-- Reviews --}}
+        <section class="mt-12">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold">Customer Reviews</h2>
+                    <p class="mt-1 text-sm text-gray-600">
+                        {{ $reviews->count() }} {{ $reviews->count() === 1 ? 'review' : 'reviews' }}
+                        @if ($reviews->count())
+                            · {{ number_format($averageRating, 1) }} out of 5
+                        @endif
+                    </p>
+                </div>
+
+                @if (auth()->check() && $hasPurchased)
+                    <span class="text-sm font-medium text-green-700">Verified purchase</span>
+                @endif
+            </div>
+
+            @auth
+                @if ($hasPurchased)
+                    <form action="{{ route('reviews.store', $product) }}" method="POST"
+                        class="mt-6 rounded-lg bg-white p-6 shadow-sm">
+                        @csrf
+
+                        <h3 class="font-semibold text-gray-900">
+                            {{ $existingReview ? 'Update your review' : 'Leave a review' }}
+                        </h3>
+
+                        @if ($errors->any())
+                            <div class="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-700">
+                                {{ $errors->first() }}
+                            </div>
+                        @endif
+
+                        <div class="mt-4">
+                            <label for="rating" class="block text-sm font-medium text-gray-700">Rating</label>
+                            <select id="rating" name="rating" required
+                                class="mt-1 w-full rounded-md border-gray-300 sm:w-48">
+                                @for ($rating = 5; $rating >= 1; $rating--)
+                                    <option value="{{ $rating }}" @selected((int) old('rating', $existingReview?->rating) === $rating)>
+                                        {{ $rating }} out of 5
+                                    </option>
+                                @endfor
+                            </select>
+                        </div>
+
+                        <div class="mt-4">
+                            <label for="comment" class="block text-sm font-medium text-gray-700">Review</label>
+                            <textarea id="comment" name="comment" rows="4" maxlength="1000" required
+                                class="mt-1 block w-full rounded-md border-gray-300">{{ old('comment', $existingReview?->comment) }}</textarea>
+                        </div>
+
+                        <button type="submit"
+                            class="mt-4 rounded-md bg-gray-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700">
+                            {{ $existingReview ? 'Update Review' : 'Submit Review' }}
+                        </button>
+                    </form>
+                @else
+                    <p class="mt-6 rounded-lg bg-white p-5 text-sm text-gray-600 shadow-sm">
+                        Purchase this product to leave a verified review.
+                    </p>
+                @endif
+            @else
+                <p class="mt-6 rounded-lg bg-white p-5 text-sm text-gray-600 shadow-sm">
+                    <a href="{{ route('login') }}" class="font-medium text-gray-900 underline">Log in</a>
+                    to review this product after purchasing it.
+                </p>
+            @endauth
+
+            <div class="mt-6 space-y-4">
+                @forelse ($reviews as $review)
+                    <article class="rounded-lg bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="font-semibold text-gray-900">{{ $review->user->name }}</h3>
+                                <p class="text-sm text-gray-500">{{ $review->created_at->format('M d, Y') }}</p>
+                            </div>
+                            <span class="font-medium text-gray-700">{{ $review->rating }}/5</span>
+                        </div>
+                        <p class="mt-3 whitespace-pre-line text-gray-700">{{ $review->comment }}</p>
+                    </article>
+                @empty
+                    <div class="rounded-lg bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
+                        No reviews yet. Be the first to review this product.
+                    </div>
+                @endforelse
+            </div>
+        </section>
 
         {{-- Related Products --}}
         @if ($relatedProducts->count())

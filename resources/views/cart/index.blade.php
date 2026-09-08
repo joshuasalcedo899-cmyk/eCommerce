@@ -12,23 +12,72 @@
 
 <body class="bg-gray-100 text-gray-900">
 
-    {{-- Navigation --}}
+    @include('layouts.navigation')
+    @if (false)
+    {{-- Legacy navigation --}}
     <nav class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="h-16 flex items-center justify-between">
-
                 <a href="{{ route('store.index') }}" class="inline-flex items-center">
                     <img src="{{ asset('image/like.png') }}" alt="{{ config('app.name', 'E-Commerce') }}"
                         class="h-9 w-auto object-contain">
                 </a>
 
-                <a href="{{ route('store.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
-                    Continue Shopping
-                </a>
+                <div class="flex items-center gap-4">
+                    <a href="{{ route('store.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                        Shop
+                    </a>
+                    <a href="{{ route('cart.index') }}" class="font-semibold text-sm text-gray-900">
+                        Cart
+                    </a>
+                    @auth
+                        <a href="{{ route('orders.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                            Purchase History
+                        </a>
 
+                        <x-dropdown align="right" width="48">
+                            <x-slot name="trigger">
+                                <button
+                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                                    <div>{{ Auth::user()->name }}</div>
+
+                                    <div class="ms-1">
+                                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            </x-slot>
+
+                            <x-slot name="content">
+                                <x-dropdown-link :href="route('profile.edit')">
+                                    {{ __('Profile') }}
+                                </x-dropdown-link>
+
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
+                                        {{ __('Log Out') }}
+                                    </x-dropdown-link>
+                                </form>
+                            </x-slot>
+                        </x-dropdown>
+                    @else
+                        <a href="{{ route('login') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                            Login
+                        </a>
+                        <a href="{{ route('register') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                            Register
+                        </a>
+                    @endauth
+                </div>
             </div>
         </div>
     </nav>
+    @endif
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
@@ -55,6 +104,21 @@
                 {{-- Cart Items --}}
                 <div class="lg:col-span-2 space-y-4">
 
+                    <form id="checkout-form" action="{{ route('cart.checkout') }}" method="POST">
+                        @csrf
+                    </form>
+
+                    <div class="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
+                        <label for="select-all" class="flex items-center gap-3 text-sm font-medium text-gray-700">
+                            <input id="select-all" type="checkbox" class="rounded border-gray-300 text-gray-800 focus:ring-gray-500"
+                                @checked(count($selectedItems) === count($items))>
+                            Select all items
+                        </label>
+                        <span id="selected-count" class="text-sm text-gray-500">
+                            {{ count($selectedItems) }} selected
+                        </span>
+                    </div>
+
                     @foreach ($items as $item)
 
                         @php
@@ -67,6 +131,14 @@
                         <div class="bg-white rounded-lg shadow-sm p-5">
 
                             <div class="flex flex-col sm:flex-row gap-5">
+
+                                <div class="flex items-start pt-1">
+                                    <input type="checkbox" name="selected_items[]" value="{{ $product->id }}"
+                                        form="checkout-form"
+                                        data-subtotal="{{ $item['subtotal'] }}"
+                                        class="cart-item-checkbox rounded border-gray-300 text-gray-800 focus:ring-gray-500"
+                                        @checked(in_array($product->id, $selectedItems))>
+                                </div>
 
                                 {{-- Image --}}
                                 <div class="w-full sm:w-32 h-32 flex-shrink-0">
@@ -168,6 +240,10 @@
                             Order Summary
                         </h2>
 
+                        <p class="mt-2 text-sm text-gray-500">
+                            Selected items: <span id="selected-subtotal" class="font-semibold text-gray-900">{{ number_format($selectedTotal, 2) }}</span>
+                        </p>
+
                         <div class="mt-6 flex justify-between">
                             <span class="text-gray-600">
                                 Subtotal
@@ -183,15 +259,15 @@
                                 Total
                             </span>
 
-                            <span class="text-xl font-bold">
+                            <span id="selected-total" class="text-xl font-bold">
                                 ₱{{ number_format($total, 2) }}
                             </span>
                         </div>
 
-                        <a href="{{ route('checkout.index') }}"
+                        <button type="submit" form="checkout-form"
                             class="block w-full text-center px-6 py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700">
                             Proceed to Checkout
-                        </a>
+                        </button>
 
                     </div>
 
@@ -223,5 +299,39 @@
     </main>
 
 </body>
+
+<script>
+    const selectAll = document.getElementById('select-all');
+    const itemCheckboxes = [...document.querySelectorAll('.cart-item-checkbox')];
+    const selectedCount = document.getElementById('selected-count');
+    const selectedSubtotal = document.getElementById('selected-subtotal');
+    const selectedTotal = document.getElementById('selected-total');
+
+    function updateSelectionState() {
+        const checkedCount = itemCheckboxes.filter((checkbox) => checkbox.checked).length;
+        const total = itemCheckboxes
+            .filter((checkbox) => checkbox.checked)
+            .reduce((sum, checkbox) => sum + Number(checkbox.dataset.subtotal), 0);
+        const formattedTotal = `₱${total.toLocaleString('en-PH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })}`;
+
+        selectedCount.textContent = `${checkedCount} selected`;
+        selectedSubtotal.textContent = formattedTotal;
+        selectedTotal.textContent = formattedTotal;
+        selectAll.checked = checkedCount === itemCheckboxes.length;
+        selectAll.indeterminate = checkedCount > 0 && checkedCount < itemCheckboxes.length;
+    }
+
+    selectAll?.addEventListener('change', () => {
+        itemCheckboxes.forEach((checkbox) => {
+            checkbox.checked = selectAll.checked;
+        });
+        updateSelectionState();
+    });
+
+    itemCheckboxes.forEach((checkbox) => checkbox.addEventListener('change', updateSelectionState));
+</script>
 
 </html>

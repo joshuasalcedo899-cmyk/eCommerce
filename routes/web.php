@@ -10,12 +10,15 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\ReviewController;
 
-Route::get('/', [StorefrontController::class, 'index'])
-    ->name('store.index');
+Route::middleware('storefront')->group(function () {
+    Route::get('/', [StorefrontController::class, 'index'])
+        ->name('store.index');
 
-Route::get('/products/{product}', [StorefrontController::class, 'show'])
-    ->name('store.show');
+    Route::get('/products/{product}', [StorefrontController::class, 'show'])
+        ->name('store.show');
+});
 
 // Admin routes
 Route::middleware(['auth', 'admin'])
@@ -50,23 +53,32 @@ Route::middleware(['auth', 'admin'])
     });
 
 // Cart routes
-Route::get('/cart', [CartController::class, 'index'])
-    ->name('cart.index');
+Route::middleware('storefront')->group(function () {
+    Route::get('/cart', [CartController::class, 'index'])
+        ->name('cart.index');
 
-Route::post('/cart/{product}', [CartController::class, 'add'])
-    ->name('cart.add');
+    Route::post('/cart/checkout', [CartController::class, 'checkout'])
+        ->name('cart.checkout');
 
-Route::patch('/cart/{product}', [CartController::class, 'update'])
-    ->name('cart.update');
+    Route::post('/cart/{product}', [CartController::class, 'add'])
+        ->name('cart.add');
 
-Route::delete('/cart/{product}', [CartController::class, 'remove'])
-    ->name('cart.remove');
+    Route::patch('/cart/{product}', [CartController::class, 'update'])
+        ->name('cart.update');
 
-Route::delete('/cart', [CartController::class, 'clear'])
-    ->name('cart.clear');
+    Route::delete('/cart/{product}', [CartController::class, 'remove'])
+        ->name('cart.remove');
+
+    Route::delete('/cart', [CartController::class, 'clear'])
+        ->name('cart.clear');
+
+});
 
 // Checkout routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'storefront'])->group(function () {
+    Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])
+        ->name('reviews.store');
+
     Route::get('/checkout', [CheckoutController::class, 'index'])
         ->name('checkout.index');
 
@@ -75,7 +87,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Orders routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'storefront'])->group(function () {
     Route::get('/orders', [OrdersController::class, 'index'])
         ->name('orders.index');
 

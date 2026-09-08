@@ -1,0 +1,10 @@
+.env
+.env.*
+.git
+.gitignore
+Dockerfile
+node_modules
+public/build
+storage/logs
+storage/framework/cache/data
+vendor

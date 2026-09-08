@@ -35,8 +35,15 @@ class CartController extends Controller
         }
 
         $total = collect($items)->sum('subtotal');
+        $selectedItems = array_values(array_intersect(
+            array_keys($cart),
+            $request->session()->get('checkout_items', array_keys($cart))
+        ));
+        $selectedTotal = collect($items)
+            ->filter(fn (array $item): bool => in_array($item['product']->id, $selectedItems))
+            ->sum('subtotal');
 
-        return view('cart.index', compact('items', 'total'));
+        return view('cart.index', compact('items', 'total', 'selectedItems', 'selectedTotal'));
     }
 
     public function add(Request $request, Product $product): RedirectResponse
@@ -110,5 +117,22 @@ class CartController extends Controller
         return redirect()
             ->route('cart.index')
             ->with('success', 'Cart cleared.');
+    }
+
+    public function checkout(Request $request): RedirectResponse
+    {
+        $cart = $request->session()->get('cart', []);
+        $selectedItems = array_values(array_intersect(
+            array_keys($cart),
+            array_map('strval', $request->input('selected_items', []))
+        ));
+
+        if (empty($selectedItems)) {
+            return back()->with('error', 'Select at least one item to continue.');
+        }
+
+        $request->session()->put('checkout_items', $selectedItems);
+
+        return redirect()->route('checkout.index');
     }
 }

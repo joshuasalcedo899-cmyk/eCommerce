@@ -15,20 +15,27 @@ class CheckoutController extends Controller
     {
         $cart = $request->session()->get('cart', []);
 
-        if (empty($cart)) {
+        $selectedItems = array_values(array_intersect(
+            array_keys($cart),
+            $request->session()->get('checkout_items', array_keys($cart))
+        ));
+
+        if (empty($cart) || empty($selectedItems)) {
             return redirect()
                 ->route('cart.index')
                 ->with('error', 'Your cart is empty.');
         }
 
-        $products = Product::whereIn('id', array_keys($cart))
+        $checkoutCart = array_intersect_key($cart, array_flip($selectedItems));
+
+        $products = Product::whereIn('id', array_keys($checkoutCart))
             ->with('images')
             ->get()
             ->keyBy('id');
 
         $items = [];
 
-        foreach ($cart as $productId => $quantity) {
+        foreach ($checkoutCart as $productId => $quantity) {
             if (!isset($products[$productId])) {
                 continue;
             }
@@ -82,22 +89,27 @@ class CheckoutController extends Controller
         ]);
 
         $cart = $request->session()->get('cart', []);
+        $selectedItems = array_values(array_intersect(
+            array_keys($cart),
+            $request->session()->get('checkout_items', array_keys($cart))
+        ));
+        $checkoutCart = array_intersect_key($cart, array_flip($selectedItems));
 
-        if (empty($cart)) {
+        if (empty($checkoutCart)) {
             return redirect()
                 ->route('cart.index')
                 ->with('error', 'Your cart is empty.');
         }
 
-        $order = DB::transaction(function () use ($cart, $validated, $request){
-            $products = Product::whereIn('id', array_keys($cart))
+        $order = DB::transaction(function () use ($checkoutCart, $validated, $request){
+            $products = Product::whereIn('id', array_keys($checkoutCart))
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
             $subtotal = 0;
 
-            foreach ($cart as $productId => $quantity) {
+            foreach ($checkoutCart as $productId => $quantity) {
                 if (!isset($products[$productId])) {
                     abort(422, 'A product in your cart no longer exists.');
                 }
@@ -133,7 +145,7 @@ class CheckoutController extends Controller
                 'shipping_address' => $validated['shipping_address'],
             ]);
 
-            foreach ($cart as $productId => $quantity) {
+            foreach ($checkoutCart as $productId => $quantity) {
                 $product = $products[$productId];
 
                 $order->items()->create([
@@ -150,7 +162,9 @@ class CheckoutController extends Controller
             return $order;
         });
 
-        $request->session()->forget('cart');
+        $remainingCart = array_diff_key($cart, $checkoutCart);
+        $request->session()->put('cart', $remainingCart);
+        $request->session()->forget('checkout_items');
 
         return redirect()
             ->route('orders.show', $order)
