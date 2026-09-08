@@ -11,10 +11,19 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\ShopTheLookController;
+use App\Http\Controllers\Admin\LookController;
+use App\Http\Controllers\Admin\LookVariantController;
 
 Route::middleware('storefront')->group(function () {
     Route::get('/', [StorefrontController::class, 'index'])
         ->name('store.index');
+
+    Route::get('/looks', [ShopTheLookController::class, 'index'])
+        ->name('looks.index');
+
+    Route::get('/looks/{look}', [ShopTheLookController::class, 'show'])
+        ->name('looks.show');
 
     Route::get('/products/{product}', [StorefrontController::class, 'show'])
         ->name('store.show');
@@ -29,6 +38,13 @@ Route::middleware(['auth', 'admin'])
             ->name('dashboard');
 
         Route::resource('categories', CategoryController::class);
+
+        Route::resource('looks', LookController::class)->except(['show']);
+        Route::get('looks/{look}/variants/create', [LookVariantController::class, 'create'])->name('looks.variants.create');
+        Route::post('looks/{look}/variants', [LookVariantController::class, 'store'])->name('looks.variants.store');
+        Route::get('looks/{look}/variants/{variant}/edit', [LookVariantController::class, 'edit'])->name('looks.variants.edit');
+        Route::put('looks/{look}/variants/{variant}', [LookVariantController::class, 'update'])->name('looks.variants.update');
+        Route::delete('looks/{look}/variants/{variant}', [LookVariantController::class, 'destroy'])->name('looks.variants.destroy');
 
         Route::resource('products', ProductController::class);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Look;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -38,8 +39,9 @@ class StorefrontController extends Controller
             ->withQueryString();
 
         $categories = Category::orderBy('name')->get();
+        $looks = Look::where('is_active', true)->latest()->take(4)->get();
 
-        return view('store.index', compact('products', 'categories'));
+        return view('store.index', compact('products', 'categories', 'looks'));
     }
 
     public function show(Request $request, Product $product): View

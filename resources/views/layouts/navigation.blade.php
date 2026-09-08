@@ -20,12 +20,18 @@
                         <x-nav-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')">
                             {{ __('Products') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('admin.looks.index')" :active="request()->routeIs('admin.looks.*')">
+                            {{ __('Looks') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
                             {{ __('Categories') }}
                         </x-nav-link>
                     @else
                         <x-nav-link :href="route('store.index')" :active="request()->routeIs('store.index', 'store.show')">
                             {{ __('Shop') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('looks.index')" :active="request()->routeIs('looks.*')">
+                            {{ __('Shop the Look') }}
                         </x-nav-link>
                         <x-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
                             {{ __('Purchase History') }}
@@ -104,12 +110,18 @@
                 <x-responsive-nav-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')">
                     {{ __('Products') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.looks.index')" :active="request()->routeIs('admin.looks.*')">
+                    {{ __('Looks') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
                     {{ __('Categories') }}
                 </x-responsive-nav-link>
             @else
                 <x-responsive-nav-link :href="route('store.index')" :active="request()->routeIs('store.index', 'store.show')">
                     {{ __('Shop') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('looks.index')" :active="request()->routeIs('looks.*')">
+                    {{ __('Shop the Look') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
                     {{ __('Purchase History') }}

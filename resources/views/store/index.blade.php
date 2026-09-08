@@ -219,6 +219,23 @@
 
         @endif
 
+        @if ($looks->count())
+            <section class="mt-14">
+                <div class="flex items-end justify-between gap-4">
+                    <div><h2 class="text-2xl font-bold">Shop the Look</h2><p class="mt-1 text-gray-600">See the outfit, then shop every piece.</p></div>
+                    <a href="{{ route('looks.index') }}" class="text-sm font-medium text-gray-700 hover:text-gray-900">View all looks</a>
+                </div>
+                <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    @foreach ($looks as $look)
+                        <a href="{{ route('looks.show', $look) }}" class="overflow-hidden rounded-lg bg-white shadow-sm transition hover:shadow-md">
+                            <img src="{{ asset('storage/' . $look->image_path) }}" alt="{{ $look->title }}" class="aspect-[4/5] w-full object-cover">
+                            <div class="p-4"><h3 class="font-semibold">{{ $look->title }}</h3><p class="mt-1 text-sm text-gray-500">Shop this outfit</p></div>
+                        </a>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
     </main>
 
 </body>
