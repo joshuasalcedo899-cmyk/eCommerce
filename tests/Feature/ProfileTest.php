@@ -20,6 +20,8 @@ test('profile information can be updated', function () {
         ->patch('/profile', [
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'phone' => '09171234567',
+            'address' => '123 Main Street',
         ]);
 
     $response
@@ -30,6 +32,8 @@ test('profile information can be updated', function () {
 
     $this->assertSame('Test User', $user->name);
     $this->assertSame('test@example.com', $user->email);
+    $this->assertSame('09171234567', $user->phone);
+    $this->assertSame('123 Main Street', $user->address);
     $this->assertNull($user->email_verified_at);
 });
 

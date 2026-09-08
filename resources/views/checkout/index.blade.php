@@ -77,7 +77,7 @@
                                     id="shipping_phone"
                                     name="shipping_phone"
                                     type="text"
-                                    value="{{ old('shipping_phone') }}"
+                                    value="{{ old('shipping_phone', auth()->user()->phone) }}"
                                     required
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500"
                                 >
@@ -97,7 +97,7 @@
                                     rows="4"
                                     required
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500"
-                                >{{ old('shipping_address') }}</textarea>
+                                >{{ old('shipping_address', auth()->user()->address) }}</textarea>
                             </div>
 
                         </div>

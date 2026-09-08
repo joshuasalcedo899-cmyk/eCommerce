@@ -134,7 +134,7 @@
                                 : 'border-gray-300 bg-white text-gray-400'
                                                                                         }}
                                                                                     ">
-                                                        @if ($completed)
+                                                        @if ($completed || ($current && $order->status === 'delivered'))
                                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                                     d="M5 13l4 4L19 7" />

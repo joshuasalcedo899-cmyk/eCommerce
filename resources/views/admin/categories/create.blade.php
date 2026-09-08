@@ -67,7 +67,7 @@
 
                         <button
                             type="submit"
-                            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+                            class="rounded-md bg-gray-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-700"
                         >
                             Create Category
                         </button>

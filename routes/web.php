@@ -95,6 +95,9 @@ Route::middleware(['auth', 'storefront'])->group(function () {
     Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])
         ->name('reviews.store');
 
+    Route::patch('/products/{product}/reviews/{review}', [ReviewController::class, 'update'])
+        ->name('reviews.update');
+
     Route::get('/checkout', [CheckoutController::class, 'index'])
         ->name('checkout.index');
 

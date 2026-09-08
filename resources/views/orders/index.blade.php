@@ -52,7 +52,13 @@
                             <tbody class="bg-white divide-y divide-gray-200">
 
                                 @foreach ($orders as $order)
-                                    <tr>
+                                    <tr
+                                        class="cursor-pointer hover:bg-gray-50"
+                                        role="link"
+                                        tabindex="0"
+                                        onclick="window.location.href='{{ route('orders.show', $order) }}'"
+                                        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }"
+                                    >
 
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="font-medium text-gray-900">
@@ -75,12 +81,15 @@
                                         </td>
 
                                         <td class="px-6 py-4 whitespace-nowrap text-right">
-                                            <a
-                                                href="{{ route('orders.show', $order) }}"
-                                                class="text-sm text-gray-600 hover:text-gray-900"
-                                            >
-                                                Track Purchase
-                                            </a>
+                                            @if ($order->items->first()?->product)
+                                                <a
+                                                    href="{{ route('store.show', $order->items->first()->product) }}#reviews"
+                                                    class="mr-4 text-sm font-medium text-gray-800 hover:text-gray-600"
+                                                    onclick="event.stopPropagation()"
+                                                >
+                                                    Review
+                                                </a>
+                                            @endif
                                         </td>
 
                                     </tr>

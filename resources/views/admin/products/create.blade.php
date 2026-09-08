@@ -107,7 +107,7 @@
                         <label class="inline-flex items-center">
 
                             <input type="checkbox" name="is_active" value="1" @checked(old('is_active', true))
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm">
+                                class="rounded border-gray-300 text-gray-800 focus:ring-gray-500">
 
                             <span class="ml-2 text-sm text-gray-600">
                                 Active product
@@ -116,41 +116,41 @@
                         </label>
                     </div>
 
-                    {{-- Buttons --}}
-                    <div class="mt-6 flex gap-3">
-                        <div>
-                            <x-input-label for="images" value="Product Images" />
+                    {{-- Product Images --}}
+                    <div class="mt-6">
+                        <x-input-label for="images" value="Product Images" />
 
-                            <input id="images" name="images[]" type="file" multiple
-                                accept="image/jpeg,image/png,image/jpg,image/webp"
-                                class="block mt-1 w-full border-gray-300 rounded-md shadow-sm" />
+                        <input id="images" name="images[]" type="file" multiple
+                            accept="image/jpeg,image/png,image/jpg,image/webp"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
 
-                            <p class="mt-1 text-sm text-gray-500">
-                                You can select multiple images. The first image will be the primary image.
-                                Maximum 5MB per image.
-                            </p>
+                        <p class="mt-1 text-sm text-gray-500">
+                            You can select multiple images. The first image will be the primary image.
+                            Maximum 5MB per image.
+                        </p>
 
-                            <x-input-error :messages="$errors->get('images')" class="mt-2" />
+                        <x-input-error :messages="$errors->get('images')" class="mt-2" />
 
-                            @foreach ($errors->get('images.*') as $messages)
-                                @foreach ($messages as $message)
-                                    <p class="mt-2 text-sm text-red-600">
-                                        {{ $message }}
-                                    </p>
-                                @endforeach
+                        @foreach ($errors->get('images.*') as $messages)
+                            @foreach ($messages as $message)
+                                <p class="mt-2 text-sm text-red-600">
+                                    {{ $message }}
+                                </p>
                             @endforeach
-                        </div>
+                        @endforeach
+                    </div>
 
+                    {{-- Actions --}}
+                    <div class="mt-8 flex items-center gap-3">
                         <button type="submit"
-                            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
+                            class="rounded-md bg-gray-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-700">
                             Create Product
                         </button>
 
                         <a href="{{ route('admin.products.index') }}"
-                            class="rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300">
+                            class="inline-flex items-center rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
                             Cancel
                         </a>
-
                     </div>
 
                 </form>

@@ -216,7 +216,7 @@
         </div>
 
         {{-- Reviews --}}
-        <section class="mt-12">
+        <section id="reviews" class="mt-12">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h2 class="text-2xl font-bold">Customer Reviews</h2>
@@ -235,43 +235,48 @@
 
             @auth
                 @if ($hasPurchased)
-                    <form action="{{ route('reviews.store', $product) }}" method="POST"
-                        class="mt-6 rounded-lg bg-white p-6 shadow-sm">
-                        @csrf
+                    @if (!$existingReview)
+                        <form action="{{ route('reviews.store', $product) }}" method="POST"
+                            class="mt-6 rounded-lg bg-white p-6 shadow-sm">
+                            @csrf
 
-                        <h3 class="font-semibold text-gray-900">
-                            {{ $existingReview ? 'Update your review' : 'Leave a review' }}
-                        </h3>
+                            <h3 class="font-semibold text-gray-900">Leave a review</h3>
 
-                        @if ($errors->any())
-                            <div class="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-700">
-                                {{ $errors->first() }}
+                            @if ($errors->any())
+                                <div class="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-700">
+                                    {{ $errors->first() }}
+                                </div>
+                            @endif
+
+                            <div class="mt-4" x-data="{ rating: {{ (int) old('rating', 5) }} }">
+                                <label class="block text-sm font-medium text-gray-700">Rating</label>
+                                <input type="hidden" id="rating" name="rating" x-model="rating">
+                                <div class="mt-2 flex items-center gap-1" role="radiogroup" aria-label="Rating">
+                                    @for ($rating = 1; $rating <= 5; $rating++)
+                                        <button type="button" @click="rating = {{ $rating }}"
+                                            :class="rating >= {{ $rating }} ? 'opacity-100' : 'opacity-30 grayscale'"
+                                            :aria-checked="rating === {{ $rating }}" role="radio"
+                                            aria-label="{{ $rating }} out of 5 stars"
+                                            class="rounded p-1 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                                            <img src="{{ asset('image/star.png') }}" alt="" class="h-7 w-7 object-contain">
+                                        </button>
+                                    @endfor
+                                    <span class="ml-2 text-sm text-gray-600" x-text="`${rating} out of 5`"></span>
+                                </div>
                             </div>
-                        @endif
 
-                        <div class="mt-4">
-                            <label for="rating" class="block text-sm font-medium text-gray-700">Rating</label>
-                            <select id="rating" name="rating" required
-                                class="mt-1 w-full rounded-md border-gray-300 sm:w-48">
-                                @for ($rating = 5; $rating >= 1; $rating--)
-                                    <option value="{{ $rating }}" @selected((int) old('rating', $existingReview?->rating) === $rating)>
-                                        {{ $rating }} out of 5
-                                    </option>
-                                @endfor
-                            </select>
-                        </div>
+                            <div class="mt-4">
+                                <label for="comment" class="block text-sm font-medium text-gray-700">Review</label>
+                                <textarea id="comment" name="comment" rows="4" maxlength="1000" required
+                                    class="mt-1 block w-full rounded-md border-gray-300">{{ old('comment') }}</textarea>
+                            </div>
 
-                        <div class="mt-4">
-                            <label for="comment" class="block text-sm font-medium text-gray-700">Review</label>
-                            <textarea id="comment" name="comment" rows="4" maxlength="1000" required
-                                class="mt-1 block w-full rounded-md border-gray-300">{{ old('comment', $existingReview?->comment) }}</textarea>
-                        </div>
-
-                        <button type="submit"
-                            class="mt-4 rounded-md bg-gray-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700">
-                            {{ $existingReview ? 'Update Review' : 'Submit Review' }}
-                        </button>
-                    </form>
+                            <button type="submit"
+                                class="mt-4 rounded-md bg-gray-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700">
+                                Submit Review
+                            </button>
+                        </form>
+                    @endif
                 @else
                     <p class="mt-6 rounded-lg bg-white p-5 text-sm text-gray-600 shadow-sm">
                         Purchase this product to leave a verified review.
@@ -286,15 +291,67 @@
 
             <div class="mt-6 space-y-4">
                 @forelse ($reviews as $review)
-                    <article class="rounded-lg bg-white p-5 shadow-sm">
+                    <article class="rounded-lg bg-white p-5 shadow-sm"
+                        @if (auth()->id() === $review->user_id) x-data="{ editing: {{ old('review_id') == $review->id ? 'true' : 'false' }} }" @endif>
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <h3 class="font-semibold text-gray-900">{{ $review->user->name }}</h3>
                                 <p class="text-sm text-gray-500">{{ $review->created_at->format('M d, Y') }}</p>
                             </div>
-                            <span class="font-medium text-gray-700">{{ $review->rating }}/5</span>
+                            <div class="flex flex-col items-end gap-2">
+                                <div class="flex items-center gap-1" aria-label="{{ $review->rating }} out of 5 stars">
+                                @for ($star = 1; $star <= $review->rating; $star++)
+                                    <img src="{{ asset('image/star.png') }}" alt="" class="h-5 w-5 object-contain">
+                                @endfor
+                                <span class="ml-1 text-sm font-medium text-gray-700">{{ $review->rating }}/5</span>
+                                </div>
+                                @if (auth()->id() === $review->user_id)
+                                    <button type="button" @click="editing = !editing"
+                                        class="text-sm font-medium text-gray-700 underline underline-offset-2 hover:text-gray-900"
+                                        x-text="editing ? 'Cancel' : 'Edit'"></button>
+                                @endif
+                            </div>
                         </div>
-                        <p class="mt-3 whitespace-pre-line text-gray-700">{{ $review->comment }}</p>
+                        <p class="mt-3 whitespace-pre-line text-gray-700" x-show="!editing">{{ $review->comment }}</p>
+
+                        @if (auth()->id() === $review->user_id)
+                            <form x-show="editing" x-cloak action="{{ route('reviews.update', [$product, $review]) }}"
+                                method="POST" class="mt-4 border-t border-gray-100 pt-4">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="review_id" value="{{ $review->id }}">
+
+                                @if ($errors->any() && old('review_id') == $review->id)
+                                    <div class="rounded-md bg-red-50 p-4 text-sm text-red-700">
+                                        {{ $errors->first() }}
+                                    </div>
+                                @endif
+
+                                <div x-data="{ rating: {{ (int) old('rating', $review->rating) }} }">
+                                    <label class="block text-sm font-medium text-gray-700">Rating</label>
+                                    <input type="hidden" name="rating" x-model="rating">
+                                    <div class="mt-2 flex items-center gap-1" role="radiogroup" aria-label="Rating">
+                                        @for ($rating = 1; $rating <= 5; $rating++)
+                                            <button type="button" @click="rating = {{ $rating }}"
+                                                :class="rating >= {{ $rating }} ? 'opacity-100' : 'opacity-30 grayscale'"
+                                                :aria-checked="rating === {{ $rating }}" role="radio"
+                                                aria-label="{{ $rating }} out of 5 stars"
+                                                class="rounded p-1 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                                                <img src="{{ asset('image/star.png') }}" alt="" class="h-6 w-6 object-contain">
+                                            </button>
+                                        @endfor
+                                    </div>
+                                </div>
+
+                                <label for="comment-{{ $review->id }}" class="mt-4 block text-sm font-medium text-gray-700">Comment</label>
+                                <textarea id="comment-{{ $review->id }}" name="comment" rows="3" maxlength="1000" required
+                                    class="mt-1 block w-full rounded-md border-gray-300">{{ old('comment', $review->comment) }}</textarea>
+                                <button type="submit"
+                                    class="mt-3 rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                                    Save changes
+                                </button>
+                            </form>
+                        @endif
                     </article>
                 @empty
                     <div class="rounded-lg bg-white p-6 text-center text-sm text-gray-500 shadow-sm">

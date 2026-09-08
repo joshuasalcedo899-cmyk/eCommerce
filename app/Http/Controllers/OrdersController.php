@@ -15,6 +15,7 @@ class OrdersController extends Controller
     {
         $orders = $request->user()
             ->orders()
+            ->with('items.product')
             ->latest()
             ->paginate(10);
 
