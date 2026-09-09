@@ -9,6 +9,8 @@ use App\Models\OrderItemReturn;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class OrdersController extends Controller
@@ -32,8 +34,14 @@ class OrdersController extends Controller
         );
 
         $order->load('items.product', 'items.returnRequests');
+        $exchangeProducts = Product::query()
+            ->where('is_active', true)
+            ->where('stock', '>', 0)
+            ->with('images')
+            ->orderBy('name')
+            ->get();
 
-        return view('orders.show', compact('order'));
+        return view('orders.show', compact('order', 'exchangeProducts'));
     }
 
     public function requestReturnOrExchange(Request $request, Order $order, OrderItem $item): RedirectResponse
@@ -46,7 +54,12 @@ class OrdersController extends Controller
 
         $validated = $request->validate([
             'type' => ['required', 'in:return,exchange'],
-            'quantity' => ['required', 'integer', 'min:1'],
+            'quantity' => [
+                'required',
+                'integer',
+                'min:1',
+                Rule::when($request->input('type') === 'exchange', ['max:1']),
+            ],
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
@@ -91,22 +104,114 @@ class OrdersController extends Controller
         }
 
         $validated = $request->validate([
-            'replacement_size' => ['required', 'string', 'max:50'],
+            'replacement_items' => ['required', 'array', 'size:1'],
+            'replacement_items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
+            'replacement_items.*.quantity' => ['required', 'integer', 'size:1'],
+            'replacement_items.*.size' => ['nullable', 'string', 'max:50'],
+            'settlement_method' => ['nullable', 'in:wallet,cod'],
+            'shipping_name' => ['required', 'string', 'max:255'],
+            'shipping_phone' => ['required', 'string', 'max:50'],
+            'shipping_address' => ['required', 'string', 'max:1000'],
         ]);
 
-        $product = $returnRequest->item->product;
-        $availableSizes = array_filter(array_map('trim', explode(',', (string) $product->sizes)));
+        DB::transaction(function () use ($request, $validated, $returnRequest) {
+            $exchange = OrderItemReturn::query()
+                ->with('item.order')
+                ->lockForUpdate()
+                ->findOrFail($returnRequest->id);
 
-        if (!$product || !in_array($validated['replacement_size'], $availableSizes, true)) {
-            return back()->with('error', 'Please choose another available size for this product.');
-        }
+            if ($exchange->type !== 'exchange' || $exchange->status !== 'approved') {
+                abort(422, 'This exchange is not ready for a replacement selection.');
+            }
 
-        $returnRequest->update([
-            'replacement_size' => $validated['replacement_size'],
-            'status' => 'replacement_selected',
-        ]);
+            $originalItem = OrderItem::query()->lockForUpdate()->findOrFail($exchange->order_item_id);
+            $replacementProducts = Product::query()
+                ->whereIn('id', collect($validated['replacement_items'])->pluck('product_id'))
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
 
-        return back()->with('success', 'Replacement selected. Please send the original item back for inspection.');
+            $replacementQuantity = collect($validated['replacement_items'])->sum('quantity');
+
+            if ($replacementQuantity !== (int) $exchange->quantity) {
+                throw ValidationException::withMessages([
+                    'replacement_items' => "Choose exactly {$exchange->quantity} replacement item(s).",
+                ]);
+            }
+
+            $replacementSubtotal = 0;
+            $replacementLines = [];
+
+            foreach ($validated['replacement_items'] as $line) {
+                $product = $replacementProducts->get((int) $line['product_id']);
+
+                if (!$product || !$product->is_active || $product->stock < $line['quantity']) {
+                    throw ValidationException::withMessages([
+                        'replacement_items' => 'One of the selected products is no longer available in the requested quantity.',
+                    ]);
+                }
+
+                $size = trim((string) ($line['size'] ?? '')) ?: null;
+                $availableSizes = array_filter(array_map('trim', explode(',', (string) $product->sizes)));
+
+                if ($availableSizes && (!$size || !in_array($size, $availableSizes, true))) {
+                    throw ValidationException::withMessages([
+                        'replacement_items' => "Choose an available size for {$product->name}.",
+                    ]);
+                }
+
+                $replacementSubtotal += (float) $product->price * $line['quantity'];
+                $replacementLines[] = [
+                    'product_id' => $product->id,
+                    'size' => $size,
+                    'price' => $product->price,
+                    'quantity' => $line['quantity'],
+                ];
+            }
+
+            $exchangeShippingFee = 100;
+            $originalValue = (float) $exchange->item->order->total;
+            $replacementSubtotal = round($replacementSubtotal, 2);
+            $newExchangeBill = round($replacementSubtotal + $exchangeShippingFee, 2);
+            $priceDifference = round($newExchangeBill - $originalValue, 2);
+            $settlementMethod = $priceDifference > 0
+                ? ($validated['settlement_method'] ?? null)
+                : ($priceDifference < 0 ? 'wallet' : null);
+
+            if ($priceDifference > 0 && !$settlementMethod) {
+                throw ValidationException::withMessages([
+                    'settlement_method' => 'Choose how to pay the additional exchange amount.',
+                ]);
+            }
+
+            if ($priceDifference > 0 && $settlementMethod === 'wallet') {
+                $user = $request->user()->newQuery()->lockForUpdate()->findOrFail($request->user()->id);
+
+                if ((float) $user->wallet_balance < $priceDifference) {
+                    throw ValidationException::withMessages([
+                        'settlement_method' => 'Your e-wallet balance is not enough to pay the exchange difference.',
+                    ]);
+                }
+
+                $user->decrement('wallet_balance', $priceDifference);
+            }
+
+            $exchange->replacementItems()->delete();
+            $exchange->replacementItems()->createMany($replacementLines);
+            $exchange->forceFill([
+                'replacement_product_id' => count($replacementLines) === 1 ? $replacementLines[0]['product_id'] : null,
+                'replacement_size' => count($replacementLines) === 1 ? $replacementLines[0]['size'] : null,
+                'replacement_subtotal' => $replacementSubtotal,
+                'price_difference' => $priceDifference,
+                'settlement_method' => $settlementMethod,
+                'shipping_name' => $validated['shipping_name'],
+                'shipping_phone' => $validated['shipping_phone'],
+                'shipping_address' => $validated['shipping_address'],
+                'status' => 'replacement_selected',
+            ])->save();
+        });
+
+        return back()->with('success', 'Replacement items selected. Please send the original item back for inspection.');
     }
 
     public function cancel(

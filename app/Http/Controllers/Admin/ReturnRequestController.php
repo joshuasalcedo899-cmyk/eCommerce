@@ -28,7 +28,7 @@ class ReturnRequestController extends Controller
 
     private function requestsView(bool $archived): View
     {
-        $returnRequests = OrderItemReturn::with(['item.order.user', 'user', 'replacementProduct'])
+        $returnRequests = OrderItemReturn::with(['item.order.user', 'user', 'replacementProduct', 'replacementItems.product'])
             ->when($archived, function ($query) {
                 $query->where(function ($query) {
                     $query->where('status', 'rejected')
@@ -63,7 +63,7 @@ class ReturnRequestController extends Controller
 
         DB::transaction(function () use ($returnRequest, $validated) {
             $returnRequest = OrderItemReturn::query()
-                ->with(['item.order'])
+                ->with(['item.order', 'replacementItems.product'])
                 ->lockForUpdate()
                 ->findOrFail($returnRequest->id);
 
@@ -120,7 +120,7 @@ class ReturnRequestController extends Controller
 
         DB::transaction(function () use ($returnRequest, $validated) {
             $exchange = OrderItemReturn::query()
-                ->with(['item.order'])
+                ->with(['item.order', 'replacementItems.product'])
                 ->lockForUpdate()
                 ->findOrFail($returnRequest->id);
 
@@ -128,8 +128,8 @@ class ReturnRequestController extends Controller
                 abort(422, 'This exchange is not ready to be received.');
             }
 
-            if (!$exchange->replacement_size) {
-                abort(422, 'A replacement size must be selected before completing this exchange.');
+            if (!$exchange->replacementItems->count() && !$exchange->replacement_product_id) {
+                abort(422, 'Replacement items must be selected before completing this exchange.');
             }
 
             $originalItem = OrderItem::query()
@@ -143,30 +143,63 @@ class ReturnRequestController extends Controller
                 'status' => 'returned',
             ]);
 
+            $replacementItems = $exchange->replacementItems;
+
+            if (!$replacementItems->count()) {
+                $replacementItems = collect([(object) [
+                    'product_id' => $exchange->replacement_product_id,
+                    'size' => $exchange->replacement_size,
+                    'price' => $originalItem->price,
+                    'quantity' => $exchange->quantity,
+                ]]);
+            }
+
+            $replacementSubtotal = 0;
+
+            foreach ($replacementItems as $replacementItem) {
+                $replacementProduct = Product::query()->lockForUpdate()->findOrFail($replacementItem->product_id);
+
+                if (!$replacementProduct->is_active || $replacementProduct->stock < $replacementItem->quantity) {
+                    abort(422, "There is not enough stock for {$replacementProduct->name}.");
+                }
+
+                $replacementProduct->decrement('stock', $replacementItem->quantity);
+                $replacementSubtotal += (float) $replacementItem->price * $replacementItem->quantity;
+            }
+
             $user = User::query()->findOrFail($originalOrder->user_id);
+            if ((float) $exchange->price_difference < 0) {
+                $user->increment('wallet_balance', abs($exchange->price_difference));
+            }
+
+            $amountDue = max((float) $exchange->price_difference, 0);
             $newOrder = $user->orders()->create([
                 'order_number' => 'EXC-' . now()->format('YmdHis') . '-' . strtoupper(Str::random(5)),
                 'status' => 'processing',
                 'is_exchange' => true,
                 'exchange_from_order_id' => $originalOrder->getKey(),
-                'payment_method' => 'exchange',
-                'subtotal' => 0,
-                'shipping_fee' => 0,
-                'total' => 0,
-                'shipping_name' => $originalOrder->shipping_name,
-                'shipping_phone' => $originalOrder->shipping_phone,
-                'shipping_address' => $originalOrder->shipping_address,
+                'payment_method' => $exchange->settlement_method ?: 'exchange',
+                'subtotal' => $amountDue,
+                'shipping_fee' => 100,
+                'total' => $amountDue,
+                'shipping_name' => $exchange->shipping_name ?: $originalOrder->shipping_name,
+                'shipping_phone' => $exchange->shipping_phone ?: $originalOrder->shipping_phone,
+                'shipping_address' => $exchange->shipping_address ?: $originalOrder->shipping_address,
             ]);
 
-            $newOrder->items()->create([
-                'product_id' => $originalItem->product_id,
-                'product_name' => $originalItem->product_name,
-                'size' => $exchange->replacement_size,
-                'exchanged' => true,
-                'price' => $originalItem->price,
-                'quantity' => $exchange->quantity,
-                'subtotal' => 0,
-            ]);
+            foreach ($replacementItems as $replacementItem) {
+                $replacementProduct = Product::findOrFail($replacementItem->product_id);
+
+                $newOrder->items()->create([
+                    'product_id' => $replacementProduct->id,
+                    'product_name' => $replacementProduct->name,
+                    'size' => $replacementItem->size,
+                    'exchanged' => true,
+                    'price' => $replacementItem->price,
+                    'quantity' => $replacementItem->quantity,
+                    'subtotal' => $replacementItem->price * $replacementItem->quantity,
+                ]);
+            }
 
             $originalOrder->forceFill(['status' => 'returned'])->save();
 

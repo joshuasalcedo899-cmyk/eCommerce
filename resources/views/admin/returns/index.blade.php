@@ -41,8 +41,20 @@
                                     <td class="px-6 py-4 text-sm text-gray-700">
                                         <p class="font-medium text-gray-900">{{ $returnRequest->item->product_name }}</p>
                                         <p class="mt-1 text-gray-500">Quantity: {{ $returnRequest->quantity }}</p>
-                                        @if ($returnRequest->replacement_size)
+                                        @if ($returnRequest->replacementItems->count())
+                                            <div class="mt-2 space-y-1 text-blue-700">
+                                                @foreach ($returnRequest->replacementItems as $replacementItem)
+                                                    <p>{{ $replacementItem->product->name }} × {{ $replacementItem->quantity }}{{ $replacementItem->size ? ' · ' . $replacementItem->size : '' }}</p>
+                                                @endforeach
+                                            </div>
+                                        @elseif ($returnRequest->replacement_size)
                                             <p class="mt-1 text-blue-700">Replacement size: {{ $returnRequest->replacement_size }}</p>
+                                        @endif
+                                        @if ($returnRequest->price_difference !== null && (float) $returnRequest->price_difference !== 0.0)
+                                            <p class="mt-2 text-xs {{ $returnRequest->price_difference > 0 ? 'text-orange-700' : 'text-green-700' }}">
+                                                {{ $returnRequest->price_difference > 0 ? 'Additional payment' : 'E-wallet credit' }}:
+                                                ₱{{ number_format(abs($returnRequest->price_difference), 2) }}
+                                            </p>
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 text-sm">

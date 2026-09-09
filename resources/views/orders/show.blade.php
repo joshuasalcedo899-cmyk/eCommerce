@@ -26,6 +26,12 @@
                 </div>
             @endif
 
+            @if ($errors->any())
+                <div class="mb-6 rounded-md bg-red-50 p-4 text-red-800">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
             @php
                 $statusClasses = [
                     'pending' => 'text-yellow-800 border-2 !border-yellow-800',
@@ -217,9 +223,9 @@
                 <div class="mt-6 divide-y divide-gray-200">
 
                     @foreach ($order->items as $item)
-                        <div class="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="grid gap-5 py-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(18rem,1.15fr)] md:items-start">
 
-                            <div>
+                            <div class="min-w-0">
                                 <p class="font-medium text-gray-900">
                                     {{ $item->product_name }}
                                 </p>
@@ -246,19 +252,24 @@
                                 @endif
                             </div>
 
-                            <p class="font-medium text-gray-900">
+                            <p class="shrink-0 font-medium text-gray-900 md:pt-1 md:text-right">
                                 ₱{{ number_format($item->subtotal, 2) }}
                             </p>
 
+                            <div class="min-w-0 space-y-3">
                             @if ($order->status === 'delivered')
                                 @php
                                     $requestedQuantity = $item->returnRequests
-                                        ->whereIn('status', ['pending', 'approved'])
+                                        ->whereIn('status', ['pending', 'approved', 'replacement_selected'])
                                         ->sum('quantity');
                                     $remainingQuantity = $item->quantity - $requestedQuantity;
+                                    $hasActiveRequest = $item->returnRequests->contains(
+                                        fn ($returnRequest) => strtolower((string) $returnRequest->type) === 'exchange'
+                                            && !in_array(strtolower((string) $returnRequest->status), ['rejected', 'completed'], true)
+                                    );
                                 @endphp
 
-                                @if ($remainingQuantity > 0)
+                                @if ($remainingQuantity > 0 && !$hasActiveRequest)
                                     <details class="w-full sm:max-w-sm">
                                         <summary class="flex cursor-pointer list-none items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 transition hover:border-gray-300 hover:bg-gray-100">
                                             <span>Return or exchange</span>
@@ -292,10 +303,6 @@
                                 @endif
                             @endif
 
-                            @if ($order->is_exchange)
-                                <p class="mb-3 inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">Exchange order</p>
-                            @endif
-
                             @foreach ($item->returnRequests as $returnRequest)
                                 <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
                                     <span class="font-medium text-gray-700">{{ ucfirst($returnRequest->type) }} request</span>
@@ -306,27 +313,104 @@
                                 </div>
 
                                 @if ($returnRequest->type === 'exchange' && $returnRequest->status === 'approved')
-                                    <form action="{{ route('orders.return-exchange.replacement', [$order, $returnRequest]) }}" method="POST" class="mt-3 space-y-3 rounded-md border border-green-200 bg-green-50 p-4">
+                                    <div x-data="{
+                                            products: @js($exchangeProducts->map(fn ($product) => [
+                                                'id' => $product->id,
+                                                'name' => $product->name,
+                                                'price' => (float) $product->price,
+                                                'stock' => $product->stock,
+                                                'sizes' => array_values(array_filter(array_map('trim', explode(',', (string) $product->sizes)))),
+                                            ])->values()),
+                                            lines: [{ product_id: '', quantity: 1, size: '' }],
+                                            originalValue: {{ (float) $order->total }},
+                                            exchangeShippingFee: 100,
+                                            selectedProduct(line) { return this.products.find(product => product.id === Number(line.product_id)); },
+                                            total() { return this.lines.reduce((sum, line) => { const product = this.selectedProduct(line); return sum + (product ? product.price : 0); }, 0); },
+                                            newBill() { return this.total() + this.exchangeShippingFee; }
+                                        }">
+                                        <button type="button" @click="$refs.exchangeDialog.showModal()" class="mt-3 w-full rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50">
+                                            Choose replacement products
+                                        </button>
+
+                                        <dialog x-ref="exchangeDialog" @click.self="$el.close()" class="w-full max-w-2xl rounded-lg bg-white p-0 shadow-xl backdrop:bg-gray-900/50" aria-labelledby="exchange-dialog-title-{{ $returnRequest->id }}">
+                                            <div>
+                                                    <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                                                        <div>
+                                                            <h2 id="exchange-dialog-title-{{ $returnRequest->id }}" class="text-lg font-semibold text-gray-900">Choose replacement products</h2>
+                                                            <p class="mt-1 text-sm text-gray-500">Select one replacement item and confirm delivery details.</p>
+                                                        </div>
+                                                        <button type="button" @click="$refs.exchangeDialog.close()" class="rounded-md px-2 py-1 text-2xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700" aria-label="Close exchange dialog">&times;</button>
+                                                    </div>
+
+                                                    <form action="{{ route('orders.return-exchange.replacement', [$order, $returnRequest]) }}" method="POST" class="max-h-[75vh] space-y-4 overflow-y-auto p-6">
                                         @csrf
                                         @method('PATCH')
                                         <div>
-                                            <label for="replacement-{{ $returnRequest->id }}" class="block text-xs font-semibold uppercase tracking-wide text-green-900">Choose replacement size</label>
-                                            <select id="replacement-{{ $returnRequest->id }}" name="replacement_size" required class="mt-1 block w-full rounded-md border-green-300 bg-white text-sm shadow-sm focus:border-green-500 focus:ring-green-500">
-                                                <option value="">Select another size</option>
-                                                @foreach (array_filter(array_map('trim', explode(',', (string) $item->product?->sizes))) as $size)
-                                                    @if ($size !== $item->size)
-                                                        <option value="{{ $size }}">{{ $size }}</option>
-                                                    @endif
-                                                @endforeach
-                                            </select>
+                                            <p class="text-sm font-semibold text-gray-900">Choose replacement product</p>
+                                            <p class="mt-1 text-xs text-gray-500">Choose one available product and size.</p>
                                         </div>
-                                        <button type="submit" class="rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800">Confirm replacement</button>
-                                    </form>
+
+                                        <template x-for="(line, index) in lines" :key="index">
+                                            <div class="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
+                                                <div class="flex gap-2">
+                                                    <select x-model.number="line.product_id" :name="`replacement_items[${index}][product_id]`" @change="line.size = ''" required class="block min-w-0 flex-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-gray-500 focus:ring-gray-500">
+                                                        <option value="">Choose a product</option>
+                                                        <template x-for="product in products" :key="product.id">
+                                                            <option :value="product.id" x-text="`${product.name} - ₱${product.price.toFixed(2)} (${product.stock} available)`"></option>
+                                                        </template>
+                                                    </select>
+                                                    <input type="hidden" :name="`replacement_items[${index}][quantity]`" value="1">
+                                                </div>
+                                                <select x-show="selectedProduct(line)?.sizes.length" x-model="line.size" :name="`replacement_items[${index}][size]`" class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-gray-500 focus:ring-gray-500">
+                                                    <option value="">Choose a size</option>
+                                                    <template x-for="size in (selectedProduct(line)?.sizes || [])" :key="size">
+                                                        <option :value="size" x-text="size"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </template>
+
+                                        <div class="grid gap-3 border-t border-gray-200 pt-4 sm:grid-cols-2">
+                                            <div>
+                                                <label for="exchange-shipping-name-{{ $returnRequest->id }}" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Recipient name</label>
+                                                <input id="exchange-shipping-name-{{ $returnRequest->id }}" name="shipping_name" type="text" value="{{ old('shipping_name', $order->shipping_name) }}" required class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-gray-500 focus:ring-gray-500">
+                                            </div>
+                                            <div>
+                                                <label for="exchange-shipping-phone-{{ $returnRequest->id }}" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Mobile number</label>
+                                                <input id="exchange-shipping-phone-{{ $returnRequest->id }}" name="shipping_phone" type="text" value="{{ old('shipping_phone', $order->shipping_phone) }}" required class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-gray-500 focus:ring-gray-500">
+                                            </div>
+                                            <div class="sm:col-span-2">
+                                                <label for="exchange-shipping-address-{{ $returnRequest->id }}" class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Delivery address</label>
+                                                <textarea id="exchange-shipping-address-{{ $returnRequest->id }}" name="shipping_address" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-gray-500 focus:ring-gray-500">{{ old('shipping_address', $order->shipping_address) }}</textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-t border-gray-200 pt-3 text-sm">
+                                            <div class="flex justify-between"><span>Original bill paid</span><span>₱<span x-text="originalValue.toFixed(2)"></span></span></div>
+                                            <div class="flex justify-between"><span>Replacement product</span><span>₱<span x-text="total().toFixed(2)"></span></span></div>
+                                            <div class="flex justify-between"><span>New shipping fee</span><span>₱<span x-text="exchangeShippingFee.toFixed(2)"></span></span></div>
+                                            <div class="flex justify-between font-semibold"><span>New exchange bill</span><span>₱<span x-text="newBill().toFixed(2)"></span></span></div>
+                                            <p x-show="newBill() < originalValue" class="mt-2 text-green-800">The difference will be credited to your e-wallet.</p>
+                                            <p x-show="newBill() > originalValue" class="mt-2 text-orange-800">Additional amount: ₱<span x-text="(newBill() - originalValue).toFixed(2)"></span></p>
+                                        </div>
+
+                                        <div x-show="newBill() > originalValue" class="space-y-2">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Payment for the difference</p>
+                                            <label class="flex items-center gap-2 text-sm"><input type="radio" name="settlement_method" value="wallet" @checked($order->payment_method === 'wallet') :required="newBill() > originalValue"> E-Wallet (₱{{ number_format(auth()->user()->wallet_balance, 2) }})</label>
+                                            <label class="flex items-center gap-2 text-sm"><input type="radio" name="settlement_method" value="cod" @checked($order->payment_method !== 'wallet') :required="newBill() > originalValue"> Cash on Delivery</label>
+                                        </div>
+
+                                        <button type="submit" class="w-full rounded-md bg-gray-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">Confirm replacement</button>
+                                                    </form>
+                                            </div>
+                                        </dialog>
+                                    </div>
                                 @elseif ($returnRequest->type === 'exchange' && $returnRequest->status === 'replacement_selected')
                                     <p class="mt-2 text-sm text-blue-700">Replacement size selected: {{ $returnRequest->replacement_size }}. Please return the original item for inspection.</p>
                                 @endif
                             @endforeach
 
+                            </div>
                         </div>
                     @endforeach
                     
