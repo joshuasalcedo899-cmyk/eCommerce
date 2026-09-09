@@ -116,13 +116,24 @@
                                     type="radio"
                                     name="payment_method"
                                     value="cod"
-                                    checked
+                                    @checked(old('payment_method', 'cod') === 'cod')
                                     class="text-gray-800 focus:ring-gray-500"
                                 >
 
                                 <span>
                                     Cash on Delivery
                                 </span>
+                            </label>
+
+                            <label class="mt-3 flex items-center gap-3">
+                                <input
+                                    type="radio"
+                                    name="payment_method"
+                                    value="wallet"
+                                    @checked(old('payment_method') === 'wallet')
+                                    class="text-gray-800 focus:ring-gray-500"
+                                >
+                                <span>E-Wallet (₱{{ number_format(auth()->user()->wallet_balance, 2) }})</span>
                             </label>
                         </div>
 
@@ -146,6 +157,10 @@
                                         <p class="font-medium text-gray-900">
                                             {{ $item['product']->name }}
                                         </p>
+
+                                        @if ($item['size'])
+                                            <p class="text-sm text-gray-500">Size: {{ $item['size'] }}</p>
+                                        @endif
 
                                         <p class="text-sm text-gray-500">
                                             {{ $item['quantity'] }}

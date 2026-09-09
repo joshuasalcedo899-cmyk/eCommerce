@@ -45,17 +45,6 @@
                     </p>
                 </a>
 
-                {{-- Customers --}}
-                <div class="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
-                    <p class="text-sm font-medium text-gray-500">
-                        Customers
-                    </p>
-
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
-                        {{ $totalCustomers }}
-                    </p>
-                </div>
-
                 {{-- Orders --}}
                 <a
                     href="{{ route('admin.orders.index') }}"
@@ -83,6 +72,17 @@
                         {{ $pendingOrders }}
                     </p>
                 </a>
+
+                {{-- Customers --}}
+                <div class="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
+                    <p class="text-sm font-medium text-gray-500">
+                        Customers
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold text-gray-900">
+                        {{ $totalCustomers }}
+                    </p>
+                </div>
 
             </div>
 
@@ -171,7 +171,7 @@
                                                 {{ $product->product_name }}
                                             </p>
                                             <p class="text-sm text-gray-500">
-                                                {{ number_format($product->units_sold) }} units sold
+                                                {{ number_format($product->units_sold) }} unit(s) sold
                                             </p>
                                         </div>
                                         <span class="shrink-0 text-sm font-medium text-gray-900">

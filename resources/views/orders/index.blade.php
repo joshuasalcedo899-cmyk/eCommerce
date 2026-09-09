@@ -52,18 +52,30 @@
                             <tbody class="bg-white divide-y divide-gray-200">
 
                                 @foreach ($orders as $order)
-                                    <tr
-                                        class="cursor-pointer hover:bg-gray-50"
-                                        role="link"
-                                        tabindex="0"
+                                    @php
+                                        $statusClasses = [
+                                            'pending' => 'bg-yellow-100 text-yellow-800',
+                                            'processing' => 'bg-blue-100 text-blue-800',
+                                            'shipped' => 'bg-indigo-100 text-indigo-800',
+                                            'delivered' => 'bg-green-100 text-green-800',
+                                            'cancelled' => 'bg-red-100 text-red-800',
+                                            'returned' => 'bg-orange-100 text-orange-800',
+                                        ];
+                                    @endphp
+
+                                    <tr class="cursor-pointer hover:bg-gray-50" role="link" tabindex="0"
                                         onclick="window.location.href='{{ route('orders.show', $order) }}'"
-                                        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }"
-                                    >
+                                        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
 
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="font-medium text-gray-900">
                                                 {{ $order->order_number }}
                                             </span>
+                                            @if ($order->items->contains('exchanged', true))
+                                                <span class="ml-2 inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
+                                                    Exchanged
+                                                </span>
+                                            @endif
                                         </td>
 
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -71,7 +83,8 @@
                                         </td>
 
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            <span
+                                                class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ $statusClasses[$order->status] ?? 'bg-gray-100 text-gray-800' }}">
                                                 {{ ucfirst($order->status) }}
                                             </span>
                                         </td>
@@ -82,11 +95,9 @@
 
                                         <td class="px-6 py-4 whitespace-nowrap text-right">
                                             @if ($order->items->first()?->product)
-                                                <a
-                                                    href="{{ route('store.show', $order->items->first()->product) }}#reviews"
+                                                <a href="{{ route('store.show', $order->items->first()->product) }}#reviews"
                                                     class="mr-4 text-sm font-medium text-gray-800 hover:text-gray-600"
-                                                    onclick="event.stopPropagation()"
-                                                >
+                                                    onclick="event.stopPropagation()">
                                                     Review
                                                 </a>
                                             @endif
@@ -114,10 +125,8 @@
                             You haven't placed any orders yet.
                         </p>
 
-                        <a
-                            href="{{ route('store.index') }}"
-                            class="inline-block mt-6 px-6 py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700"
-                        >
+                        <a href="{{ route('store.index') }}"
+                            class="inline-block mt-6 px-6 py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700">
                             Start Shopping
                         </a>
 

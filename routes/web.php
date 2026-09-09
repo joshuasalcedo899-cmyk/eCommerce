@@ -12,8 +12,10 @@ use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ShopTheLookController;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Admin\LookController;
 use App\Http\Controllers\Admin\LookVariantController;
+use App\Http\Controllers\Admin\ReturnRequestController;
 
 Route::middleware('storefront')->group(function () {
     Route::get('/', [StorefrontController::class, 'index'])
@@ -61,11 +63,26 @@ Route::middleware(['auth', 'admin'])
         Route::get('orders', [OrderController::class, 'index'])
             ->name('orders.index');
 
+        Route::get('orders/archive', [OrderController::class, 'archive'])
+            ->name('orders.archive');
+
         Route::get('orders/{order}', [OrderController::class, 'show'])
             ->name('orders.show');
 
         Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])
             ->name('orders.status');
+
+        Route::get('returns', [ReturnRequestController::class, 'index'])
+            ->name('returns.index');
+
+        Route::get('returns/archive', [ReturnRequestController::class, 'archive'])
+            ->name('returns.archive');
+
+        Route::patch('returns/{returnRequest}', [ReturnRequestController::class, 'update'])
+            ->name('returns.update');
+
+        Route::patch('returns/{returnRequest}/receive', [ReturnRequestController::class, 'receiveExchange'])
+            ->name('returns.receive');
     });
 
 // Cart routes
@@ -103,6 +120,12 @@ Route::middleware(['auth', 'storefront'])->group(function () {
 
     Route::post('/checkout', [CheckoutController::class, 'store'])
         ->name('checkout.store');
+
+    Route::get('/wallet', [WalletController::class, 'index'])
+        ->name('wallet.index');
+
+    Route::post('/wallet/top-up', [WalletController::class, 'topUp'])
+        ->name('wallet.top-up');
 });
 
 // Orders routes
@@ -115,6 +138,12 @@ Route::middleware(['auth', 'storefront'])->group(function () {
 
     Route::patch('/orders/{order}/cancel', [OrdersController::class, 'cancel'])
         ->name('orders.cancel');
+
+    Route::post('/orders/{order}/items/{item}/return-exchange', [OrdersController::class, 'requestReturnOrExchange'])
+        ->name('orders.return-exchange.store');
+
+    Route::patch('/orders/{order}/return-requests/{returnRequest}/replacement', [OrdersController::class, 'chooseReplacement'])
+        ->name('orders.return-exchange.replacement');
 });
 // Profile routes
 Route::middleware('auth')->group(function () {

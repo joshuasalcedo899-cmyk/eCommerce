@@ -26,6 +26,12 @@
                         <x-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
                             {{ __('Categories') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('admin.orders.index')" :active="request()->routeIs('admin.orders.*')">
+                            {{ __('Orders') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.returns.index')" :active="request()->routeIs('admin.returns.*')">
+                            {{ __('Returns') }}
+                        </x-nav-link>
                     @else
                         <x-nav-link :href="route('store.index')" :active="request()->routeIs('store.index', 'store.show')">
                             {{ __('Shop') }}
@@ -73,6 +79,12 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
+                        @if (Auth::user()->role !== 'admin')
+                            <x-dropdown-link :href="route('wallet.index')">
+                                {{ __('E-Wallet') }}
+                            </x-dropdown-link>
+                        @endif
+
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -116,6 +128,12 @@
                 <x-responsive-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
                     {{ __('Categories') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.orders.index')" :active="request()->routeIs('admin.orders.*')">
+                    {{ __('Orders') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.returns.index')" :active="request()->routeIs('admin.returns.*')">
+                    {{ __('Returns') }}
+                </x-responsive-nav-link>
             @else
                 <x-responsive-nav-link :href="route('store.index')" :active="request()->routeIs('store.index', 'store.show')">
                     {{ __('Shop') }}
@@ -149,6 +167,12 @@
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
+
+                @if (Auth::user()->role !== 'admin')
+                    <x-responsive-nav-link :href="route('wallet.index')" :active="request()->routeIs('wallet.*')">
+                        {{ __('E-Wallet') }}
+                    </x-responsive-nav-link>
+                @endif
 
                 <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">

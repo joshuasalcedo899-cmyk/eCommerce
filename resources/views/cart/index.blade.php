@@ -14,69 +14,70 @@
 
     @include('layouts.navigation')
     @if (false)
-    {{-- Legacy navigation --}}
-    <nav class="bg-white border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="h-16 flex items-center justify-between">
-                <a href="{{ route('store.index') }}" class="inline-flex items-center">
-                    <img src="{{ asset('image/like.png') }}" alt="{{ config('app.name', 'E-Commerce') }}"
-                        class="h-9 w-auto object-contain">
-                </a>
+        {{-- Legacy navigation --}}
+        <nav class="bg-white border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="h-16 flex items-center justify-between">
+                    <a href="{{ route('store.index') }}" class="inline-flex items-center">
+                        <img src="{{ asset('image/like.png') }}" alt="{{ config('app.name', 'E-Commerce') }}"
+                            class="h-9 w-auto object-contain">
+                    </a>
 
-                <div class="flex items-center gap-4">
-                    <a href="{{ route('store.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
-                        Shop
-                    </a>
-                    <a href="{{ route('cart.index') }}" class="font-semibold text-sm text-gray-900">
-                        Cart
-                    </a>
-                    @auth
-                        <a href="{{ route('orders.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
-                            Purchase History
+                    <div class="flex items-center gap-4">
+                        <a href="{{ route('store.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                            Shop
                         </a>
+                        <a href="{{ route('cart.index') }}" class="font-semibold text-sm text-gray-900">
+                            Cart
+                        </a>
+                        @auth
+                            <a href="{{ route('orders.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                                Purchase History
+                            </a>
 
-                        <x-dropdown align="right" width="48">
-                            <x-slot name="trigger">
-                                <button
-                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                                    <div>{{ Auth::user()->name }}</div>
+                            <x-dropdown align="right" width="48">
+                                <x-slot name="trigger">
+                                    <button
+                                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                                        <div>{{ Auth::user()->name }}</div>
 
-                                    <div class="ms-1">
-                                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd"
-                                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                    </div>
-                                </button>
-                            </x-slot>
+                                        <div class="ms-1">
+                                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    </button>
+                                </x-slot>
 
-                            <x-slot name="content">
-                                <x-dropdown-link :href="route('profile.edit')">
-                                    {{ __('Profile') }}
-                                </x-dropdown-link>
-
-                                <form method="POST" action="{{ route('logout') }}">
-                                    @csrf
-                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
-                                        {{ __('Log Out') }}
+                                <x-slot name="content">
+                                    <x-dropdown-link :href="route('profile.edit')">
+                                        {{ __('Profile') }}
                                     </x-dropdown-link>
-                                </form>
-                            </x-slot>
-                        </x-dropdown>
-                    @else
-                        <a href="{{ route('login') }}" class="text-sm text-gray-600 hover:text-gray-900">
-                            Login
-                        </a>
-                        <a href="{{ route('register') }}" class="text-sm text-gray-600 hover:text-gray-900">
-                            Register
-                        </a>
-                    @endauth
+
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <x-dropdown-link :href="route('logout')"
+                                            onclick="event.preventDefault(); this.closest('form').submit();">
+                                            {{ __('Log Out') }}
+                                        </x-dropdown-link>
+                                    </form>
+                                </x-slot>
+                            </x-dropdown>
+                        @else
+                            <a href="{{ route('login') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                                Login
+                            </a>
+                            <a href="{{ route('register') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                                Register
+                            </a>
+                        @endauth
+                    </div>
                 </div>
             </div>
-        </div>
-    </nav>
+        </nav>
     @endif
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -110,7 +111,8 @@
 
                     <div class="flex items-center justify-between rounded-lg bg-white px-5 py-4 shadow-sm">
                         <label for="select-all" class="flex items-center gap-3 text-sm font-medium text-gray-700">
-                            <input id="select-all" type="checkbox" class="rounded border-gray-300 text-gray-800 focus:ring-gray-500"
+                            <input id="select-all" type="checkbox"
+                                class="rounded border-gray-300 text-gray-800 focus:ring-gray-500"
                                 @checked(count($selectedItems) === count($items))>
                             Select all items
                         </label>
@@ -133,11 +135,10 @@
                             <div class="flex flex-col sm:flex-row gap-5">
 
                                 <div class="flex items-start pt-1">
-                                    <input type="checkbox" name="selected_items[]" value="{{ $product->id }}"
-                                        form="checkout-form"
-                                        data-subtotal="{{ $item['subtotal'] }}"
+                                    <input type="checkbox" name="selected_items[]" value="{{ $item['cart_key'] }}"
+                                        form="checkout-form" data-subtotal="{{ $item['subtotal'] }}"
                                         class="cart-item-checkbox rounded border-gray-300 text-gray-800 focus:ring-gray-500"
-                                        @checked(in_array($product->id, $selectedItems))>
+                                        @checked(in_array($item['cart_key'], $selectedItems, true))>
                                 </div>
 
                                 {{-- Image --}}
@@ -171,11 +172,26 @@
                                         ₱{{ number_format($product->price, 2) }}
                                     </p>
 
+                                    @if ($item['size'])
+                                        <p class="mt-1 text-sm font-medium text-gray-700">Size: {{ $item['size'] }}</p>
+                                    @endif
+
                                     {{-- Quantity --}}
                                     <form action="{{ route('cart.update', $product) }}" method="POST"
                                         class="mt-4 flex items-center gap-3">
                                         @csrf
                                         @method('PATCH')
+                                        <input type="hidden" name="current_size" value="{{ $item['size'] }}">
+
+                                        @if ($product->sizes)
+                                            <label for="size-{{ $item['cart_key'] }}" class="text-sm text-gray-600">Size</label>
+                                            <select id="size-{{ $item['cart_key'] }}" name="size" required
+                                                class="rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-gray-500">
+                                                @foreach (array_filter(array_map('trim', explode(',', $product->sizes))) as $size)
+                                                    <option value="{{ $size }}" @selected($item['size'] === $size)>{{ $size }}</option>
+                                                @endforeach
+                                            </select>
+                                        @endif
 
                                         <label for="quantity-{{ $product->id }}" class="text-sm text-gray-600">
                                             Quantity
@@ -183,7 +199,7 @@
 
                                         <input id="quantity-{{ $product->id }}" name="quantity" type="number" min="1"
                                             max="{{ $product->stock }}" value="{{ $item['quantity'] }}"
-                                            class="w-20 rounded-md border-gray-300">
+                                            class="w-20 rounded-md border-gray-300 focus:ring-gray-500 focus:border-gray-500 text-sm">
 
                                         <button type="submit"
                                             class="px-3 py-2 text-sm bg-gray-800 text-white rounded-md hover:bg-gray-700">
@@ -195,6 +211,7 @@
                                     <form action="{{ route('cart.remove', $product) }}" method="POST" class="mt-3">
                                         @csrf
                                         @method('DELETE')
+                                        <input type="hidden" name="size" value="{{ $item['size'] }}">
 
                                         <button type="submit" class="text-sm text-red-600 hover:text-red-800">
                                             Remove
@@ -241,7 +258,8 @@
                         </h2>
 
                         <p class="mt-2 text-sm text-gray-500">
-                            Selected items: <span id="selected-subtotal" class="font-semibold text-gray-900">{{ number_format($selectedTotal, 2) }}</span>
+                            Selected items: <span id="selected-subtotal"
+                                class="font-semibold text-gray-900">{{ number_format($selectedTotal, 2) }}</span>
                         </p>
 
                         <div class="mt-6 flex justify-between">
@@ -263,11 +281,13 @@
                                 ₱{{ number_format($total, 2) }}
                             </span>
                         </div>
+                        <div class="flex items-center justify-between mt-3">
+                            <button type="submit" form="checkout-form"
+                                class="block w-full text-center px-6 py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700">
+                                Proceed to Checkout
+                            </button>
+                        </div>
 
-                        <button type="submit" form="checkout-form"
-                            class="block w-full text-center px-6 py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700">
-                            Proceed to Checkout
-                        </button>
 
                     </div>
 

@@ -13,14 +13,17 @@ class CartController extends Controller
     {
         $cart = $request->session()->get('cart', []);
 
-        $products = Product::whereIn('id', array_keys($cart))
+        $productIds = collect(array_keys($cart))->map(fn ($key) => $this->cartKeyParts($key)[0])->unique()->values();
+        $products = Product::whereIn('id', $productIds)
             ->with('images')
             ->get()
             ->keyBy('id');
 
         $items = [];
 
-        foreach ($cart as $productId => $quantity) {
+        foreach ($cart as $cartKey => $quantity) {
+            [$productId, $size] = $this->cartKeyParts($cartKey);
+
             if (!isset($products[$productId])) {
                 continue;
             }
@@ -28,7 +31,9 @@ class CartController extends Controller
             $product = $products[$productId];
 
             $items[] = [
+                'cart_key' => $cartKey,
                 'product' => $product,
+                'size' => $size,
                 'quantity' => $quantity,
                 'subtotal' => $product->price * $quantity,
             ];
@@ -40,7 +45,7 @@ class CartController extends Controller
             $request->session()->get('checkout_items', array_keys($cart))
         ));
         $selectedTotal = collect($items)
-            ->filter(fn (array $item): bool => in_array($item['product']->id, $selectedItems))
+            ->filter(fn (array $item): bool => in_array($item['cart_key'], $selectedItems, true))
             ->sum('subtotal');
 
         return view('cart.index', compact('items', 'total', 'selectedItems', 'selectedTotal'));
@@ -52,11 +57,19 @@ class CartController extends Controller
             return back()->with('error', 'This product is currently unavailable.');
         }
 
+        $size = trim((string) $request->input('size', ''));
+        $availableSizes = array_filter(array_map('trim', explode(',', (string) $product->sizes)));
+
+        if ($availableSizes && !in_array($size, $availableSizes, true)) {
+            return back()->with('error', 'Please choose an available size.');
+        }
+
         $quantity = max(1, (int) $request->input('quantity', 1));
 
         $cart = $request->session()->get('cart', []);
 
-        $currentQuantity = $cart[$product->id] ?? 0;
+        $cartKey = $this->cartKey($product->id, $size);
+        $currentQuantity = $cart[$cartKey] ?? 0;
         $newQuantity = $currentQuantity + $quantity;
 
         if ($newQuantity > $product->stock) {
@@ -66,7 +79,7 @@ class CartController extends Controller
             );
         }
 
-        $cart[$product->id] = $newQuantity;
+        $cart[$cartKey] = $newQuantity;
 
         $request->session()->put('cart', $cart);
 
@@ -76,22 +89,42 @@ class CartController extends Controller
     public function update(Request $request, Product $product): RedirectResponse
     {
         $quantity = (int) $request->input('quantity');
+        $currentSize = trim((string) $request->input('current_size', ''));
+        $size = trim((string) $request->input('size', $currentSize));
+        $availableSizes = array_filter(array_map('trim', explode(',', (string) $product->sizes)));
+
+        if ($availableSizes && !in_array($size, $availableSizes, true)) {
+            return back()->with('error', 'Please choose an available size.');
+        }
 
         $cart = $request->session()->get('cart', []);
 
-        if (!isset($cart[$product->id])) {
+        $cartKey = $this->cartKey($product->id, $currentSize);
+
+        if (!isset($cart[$cartKey])) {
             return back();
         }
 
         if ($quantity <= 0) {
-            unset($cart[$product->id]);
+            unset($cart[$cartKey]);
         } elseif ($quantity > $product->stock) {
             return back()->with(
                 'error',
                 'The requested quantity exceeds available stock.'
             );
         } else {
-            $cart[$product->id] = $quantity;
+            $newCartKey = $this->cartKey($product->id, $size);
+
+            if ($newCartKey !== $cartKey) {
+                $quantity += (int) ($cart[$newCartKey] ?? 0);
+                unset($cart[$cartKey]);
+            }
+
+            if ($quantity > $product->stock) {
+                return back()->with('error', 'The combined quantity exceeds available stock.');
+            }
+
+            $cart[$newCartKey] = $quantity;
         }
 
         $request->session()->put('cart', $cart);
@@ -103,7 +136,8 @@ class CartController extends Controller
     {
         $cart = $request->session()->get('cart', []);
 
-        unset($cart[$product->id]);
+        $cartKey = $this->cartKey($product->id, trim((string) $request->input('size', '')));
+        unset($cart[$cartKey]);
 
         $request->session()->put('cart', $cart);
 
@@ -134,5 +168,17 @@ class CartController extends Controller
         $request->session()->put('checkout_items', $selectedItems);
 
         return redirect()->route('checkout.index');
+    }
+
+    private function cartKey(int|string $productId, string $size = ''): string
+    {
+        return $productId . '|' . rawurlencode($size);
+    }
+
+    private function cartKeyParts(string|int $cartKey): array
+    {
+        [$productId, $encodedSize] = array_pad(explode('|', (string) $cartKey, 2), 2, '');
+
+        return [(int) $productId, rawurldecode($encodedSize)];
     }
 }

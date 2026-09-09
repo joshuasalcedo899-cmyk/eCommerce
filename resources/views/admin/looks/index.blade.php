@@ -20,11 +20,24 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Look</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Products
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Looks
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Status</th>
-                                <th class="px-6 py-3"></th>
+
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Products
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status
+                                </th>
+
+                                <th
+                                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -36,13 +49,13 @@
                                                 class="h-16 w-16 rounded-md object-cover">
                                             <div>
                                                 <div class="font-medium text-gray-900">{{ $look->title }}</div>
-                                                <div class="text-sm text-gray-500">{{ $look->slug }}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-600">{{ $look->products_count }} outfit items
                                     </td>
-                                    <td class="px-6 py-4"><span
+                                    <td class="px-6 py-4 text-center">
+                                        <span
                                             class="rounded-full px-2 py-1 text-xs font-medium {{ $look->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ $look->is_active ? 'Active' : 'Inactive' }}</span>
                                     </td>
                                     <td class="px-6 py-4 text-right text-sm"><a

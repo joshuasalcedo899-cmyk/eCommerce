@@ -72,6 +72,25 @@
 
                     {{-- Price --}}
                     <div class="mt-6">
+                        <label for="sizes" class="block text-sm font-medium text-gray-700">
+                            Available Sizes
+                        </label>
+
+                        <input type="text" name="sizes" id="sizes" value="{{ old('sizes') }}"
+                            placeholder="Example: S, M, L, XL"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+
+                        <p class="mt-1 text-sm text-gray-500">
+                            Enter sizes separated by commas.
+                        </p>
+
+                        @error('sizes')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Price --}}
+                    <div class="mt-6">
                         <label for="price" class="block text-sm font-medium text-gray-700">
                             Price
                         </label>

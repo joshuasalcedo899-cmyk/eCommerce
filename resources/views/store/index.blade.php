@@ -107,16 +107,16 @@
                     </label>
 
                     <input id="search" name="search" type="text" value="{{ request('search') }}"
-                        placeholder="Search products..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        placeholder="Search products..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500">
                 </div>
 
                 <div>
-                    <label for="category" class="block text-sm font-medium text-gray-700">
+                    <label for="category" class="block text-sm font-medium text-gray-700 focus:ring-gray-500 focus:border-gray-500">
                         Category
                     </label>
 
                     <select id="category" name="category"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500">
                         <option value="">All Categories</option>
 
                         @foreach ($categories as $category)

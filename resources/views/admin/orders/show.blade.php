@@ -53,6 +53,7 @@
                                     'shipped' => 'bg-purple-100 text-purple-800',
                                     'delivered' => 'bg-green-100 text-green-800',
                                     'cancelled' => 'bg-red-100 text-red-800',
+                                    'returned' => 'bg-orange-100 text-orange-800',
                                 ];
                             @endphp
 
@@ -87,6 +88,21 @@
                                             ×
                                             {{ $item->quantity }}
                                         </p>
+
+                                        @if ($item->size)
+                                            <p class="mt-1 text-sm font-medium text-gray-700">Size: {{ $item->size }}</p>
+                                        @endif
+
+                                        @if ($item->exchanged)
+                                            <span class="mt-2 inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">
+                                                Exchanged
+                                            </span>
+                                        @endif
+                                        @if ($item->status === 'returned')
+                                            <span class="mt-2 inline-flex rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-800">
+                                                Returned
+                                            </span>
+                                        @endif
                                     </div>
 
                                     <p class="font-medium text-gray-900">
@@ -163,7 +179,8 @@
                                     'processing',
                                     'shipped',
                                     'delivered',
-                                    'cancelled'
+                                    'cancelled',
+                                    'returned'
                                 ] as $status)
 
                                     <option

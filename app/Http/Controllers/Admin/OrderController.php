@@ -14,7 +14,18 @@ class OrderController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Order::with('user');
+        return $this->ordersView($request, false);
+    }
+
+    public function archive(Request $request): View
+    {
+        return $this->ordersView($request, true);
+    }
+
+    private function ordersView(Request $request, bool $archived): View
+    {
+        $query = Order::with('user')
+            ->whereIn('status', $archived ? ['delivered', 'cancelled', 'returned'] : ['pending', 'processing', 'shipped']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -39,7 +50,7 @@ class OrderController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.orders.index', compact('orders'));
+        return view('admin.orders.index', compact('orders', 'archived'));
     }
 
     public function show(Order $order): View
@@ -59,7 +70,7 @@ class OrderController extends Controller
         $validated = $request->validate([
             'status' => [
                 'required',
-                'in:pending,processing,shipped,delivered,cancelled',
+                'in:pending,processing,shipped,delivered,cancelled,returned',
             ],
         ]);
 
@@ -89,6 +100,8 @@ class OrderController extends Controller
             ],
 
             'delivered' => [],
+
+            'returned' => [],
 
             'cancelled' => [
                 'processing',

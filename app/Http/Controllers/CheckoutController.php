@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CheckoutController extends Controller
@@ -28,14 +29,17 @@ class CheckoutController extends Controller
 
         $checkoutCart = array_intersect_key($cart, array_flip($selectedItems));
 
-        $products = Product::whereIn('id', array_keys($checkoutCart))
+        $productIds = collect(array_keys($checkoutCart))->map(fn ($key) => $this->cartKeyParts($key)[0])->unique()->values();
+        $products = Product::whereIn('id', $productIds)
             ->with('images')
             ->get()
             ->keyBy('id');
 
         $items = [];
 
-        foreach ($checkoutCart as $productId => $quantity) {
+        foreach ($checkoutCart as $cartKey => $quantity) {
+            [$productId, $size] = $this->cartKeyParts($cartKey);
+
             if (!isset($products[$productId])) {
                 continue;
             }
@@ -53,6 +57,7 @@ class CheckoutController extends Controller
 
             $items[] = [
                 'product' => $product,
+                'size' => $size,
                 'quantity' => $quantity,
                 'subtotal' => $product->price * $quantity,
             ];
@@ -85,7 +90,7 @@ class CheckoutController extends Controller
             'shipping_name' => ['required', 'string', 'max:255'],
             'shipping_phone' => ['required', 'string', 'max:50'],
             'shipping_address' => ['required', 'string', 'max:1000'],
-            'payment_method' => ['required', 'in:cod'],
+            'payment_method' => ['required', 'in:cod,wallet'],
         ]);
 
         $cart = $request->session()->get('cart', []);
@@ -102,14 +107,18 @@ class CheckoutController extends Controller
         }
 
         $order = DB::transaction(function () use ($checkoutCart, $validated, $request){
-            $products = Product::whereIn('id', array_keys($checkoutCart))
+            $user = $request->user()->newQuery()->lockForUpdate()->findOrFail($request->user()->id);
+            $productIds = collect(array_keys($checkoutCart))->map(fn ($key) => $this->cartKeyParts($key)[0])->unique()->values();
+            $products = Product::whereIn('id', $productIds)
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
             $subtotal = 0;
 
-            foreach ($checkoutCart as $productId => $quantity) {
+            foreach ($checkoutCart as $cartKey => $quantity) {
+                [$productId, $size] = $this->cartKeyParts($cartKey);
+
                 if (!isset($products[$productId])) {
                     abort(422, 'A product in your cart no longer exists.');
                 }
@@ -133,7 +142,17 @@ class CheckoutController extends Controller
             $shippingFee = 100;
             $total = $subtotal + $shippingFee;
 
-            $order = $request->user()->orders()->create([
+            if ($validated['payment_method'] === 'wallet' && (float) $user->wallet_balance < (float) $total) {
+                throw ValidationException::withMessages([
+                    'payment_method' => 'Your e-wallet balance is not enough for this order.',
+                ]);
+            }
+
+            if ($validated['payment_method'] === 'wallet') {
+                $user->decrement('wallet_balance', $total);
+            }
+
+            $order = $user->orders()->create([
                 'order_number' => 'ORD-' . now()->format('YmdHis') . '-' . strtoupper(Str::random(5)),
                 'status' => 'pending',
                 'payment_method' => $validated['payment_method'],
@@ -145,12 +164,14 @@ class CheckoutController extends Controller
                 'shipping_address' => $validated['shipping_address'],
             ]);
 
-            foreach ($checkoutCart as $productId => $quantity) {
+            foreach ($checkoutCart as $cartKey => $quantity) {
+                [$productId, $size] = $this->cartKeyParts($cartKey);
                 $product = $products[$productId];
 
                 $order->items()->create([
                     'product_id' => $product->id,
                     'product_name' => $product->name,
+                    'size' => $size ?: null,
                     'price' => $product->price,
                     'quantity' => $quantity,
                     'subtotal' => $product->price * $quantity,
@@ -169,5 +190,12 @@ class CheckoutController extends Controller
         return redirect()
             ->route('orders.show', $order)
             ->with('success', 'Your order has been placed successfully.');
+    }
+
+    private function cartKeyParts(string|int $cartKey): array
+    {
+        [$productId, $encodedSize] = array_pad(explode('|', (string) $cartKey, 2), 2, '');
+
+        return [(int) $productId, rawurldecode($encodedSize)];
     }
 }

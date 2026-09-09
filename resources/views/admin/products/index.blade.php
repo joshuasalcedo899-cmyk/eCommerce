@@ -68,10 +68,6 @@
                                         <div class="font-medium text-gray-900">
                                             {{ $product->name }}
                                         </div>
-
-                                        <div class="text-sm text-gray-500">
-                                            {{ $product->slug }}
-                                        </div>
                                     </td>
 
                                     <td class="whitespace-nowrap px-6 py-4 text-gray-600">

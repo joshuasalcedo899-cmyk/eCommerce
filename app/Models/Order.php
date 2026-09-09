@@ -12,9 +12,12 @@ class Order extends Model
         'user_id',
         'order_number',
         'status',
+        'is_exchange',
+        'exchange_from_order_id',
         'payment_method',
         'subtotal',
         'shipping_fee',
+        'shipping_fee_refunded',
         'total',
         'shipping_name',
         'shipping_phone',
@@ -27,6 +30,8 @@ class Order extends Model
             'subtotal' => 'decimal:2',
             'shipping_fee' => 'decimal:2',
             'total' => 'decimal:2',
+            'is_exchange' => 'boolean',
+            'shipping_fee_refunded' => 'boolean',
         ];
     }
 
@@ -38,5 +43,10 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function exchangeFrom(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'exchange_from_order_id');
     }
 }

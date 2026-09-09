@@ -2,15 +2,15 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Orders
+                {{ $archived ? 'Order Archive' : 'Orders' }}
             </h2>
 
-            <a
-                href="{{ route('admin.dashboard') }}"
-                class="text-sm text-gray-600 hover:text-gray-900"
-            >
-                ← Dashboard
-            </a>
+            <div class="flex items-center gap-4">
+                <a href="{{ $archived ? route('admin.orders.index') : route('admin.orders.archive') }}"
+                    class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    {{ $archived ? 'Active Orders' : 'Order Archive' }}
+                </a>
+            </div>
         </div>
     </x-slot>
 
@@ -28,7 +28,7 @@
 
                 <form
                     method="GET"
-                    action="{{ route('admin.orders.index') }}"
+                    action="{{ $archived ? route('admin.orders.archive') : route('admin.orders.index') }}"
                     class="grid grid-cols-1 md:grid-cols-3 gap-4"
                 >
 
@@ -65,13 +65,7 @@
                         >
                             <option value="">All Statuses</option>
 
-                            @foreach ([
-                                'pending',
-                                'processing',
-                                'shipped',
-                                'delivered',
-                                'cancelled'
-                            ] as $status)
+                            @foreach (($archived ? ['delivered', 'cancelled', 'returned'] : ['pending', 'processing', 'shipped']) as $status)
                                 <option
                                     value="{{ $status }}"
                                     @selected(request('status') === $status)
@@ -92,7 +86,7 @@
                         </button>
 
                         <a
-                            href="{{ route('admin.orders.index') }}"
+                            href="{{ $archived ? route('admin.orders.archive') : route('admin.orders.index') }}"
                             class="px-5 py-2.5 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                         >
                             Reset

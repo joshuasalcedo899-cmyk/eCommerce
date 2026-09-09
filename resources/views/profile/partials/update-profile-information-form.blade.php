@@ -47,20 +47,22 @@
             @endif
         </div>
 
-        <div>
-            <x-input-label for="phone" :value="__('Phone Number')" />
-            @php
-                /** @var \App\Models\User $user */
-            @endphp
-            <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full" :value="old('phone', $user->phone)" autocomplete="tel" />
-            <x-input-error class="mt-2" :messages="$errors->get('phone')" />
-        </div>
+        @if (auth()->user()->role !== 'admin')
+            <div>
+                <x-input-label for="phone" :value="__('Phone Number')" />
+                @php
+                    /** @var \App\Models\User $user */
+                @endphp
+                <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full" :value="old('phone', $user->phone)" autocomplete="tel" />
+                <x-input-error class="mt-2" :messages="$errors->get('phone')" />
+            </div>
 
-        <div>
-            <x-input-label for="address" :value="__('Address')" />
-            <textarea id="address" name="address" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" autocomplete="street-address">{{ old('address', $user->address) }}</textarea>
-            <x-input-error class="mt-2" :messages="$errors->get('address')" />
-        </div>
+            <div>
+                <x-input-label for="address" :value="__('Address')" />
+                <textarea id="address" name="address" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" autocomplete="street-address">{{ old('address', $user->address) }}</textarea>
+                <x-input-error class="mt-2" :messages="$errors->get('address')" />
+            </div>
+        @endif
 
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>

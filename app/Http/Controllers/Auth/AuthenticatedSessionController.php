@@ -32,7 +32,7 @@ class AuthenticatedSessionController extends Controller
             ? route('admin.dashboard', absolute: false)
             : route('store.index', absolute: false);
 
-        return redirect()->intended($destination);
+        return redirect($destination);
     }
 
     /**

@@ -192,11 +192,27 @@
                     <form action="{{ route('cart.add', $product) }}" method="POST" class="mt-8">
                         @csrf
 
+                        @if ($product->sizes)
+                            <fieldset x-data="{ selectedSize: '' }">
+                                <legend class="text-sm font-semibold text-gray-700">Available sizes</legend>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                @foreach (array_filter(array_map('trim', explode(',', $product->sizes))) as $size)
+                                    <label class="cursor-pointer" @click="selectedSize = '{{ addslashes($size) }}'">
+                                        <input type="radio" name="size" value="{{ $size }}" required class="peer sr-only" x-model="selectedSize">
+                                        <span :class="selectedSize === '{{ addslashes($size) }}' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 bg-white text-gray-700'" class="inline-flex min-w-12 items-center justify-center rounded-md border px-3 py-2 text-sm font-semibold transition hover:border-gray-500 peer-focus-visible:ring-2 peer-focus-visible:ring-gray-500 peer-focus-visible:ring-offset-2">
+                                            {{ $size }}
+                                        </span>
+                                    </label>
+                                @endforeach
+                                </div>
+                            </fieldset>
+                        @endif
+
                         <label for="quantity" class="block text-sm font-medium text-gray-700">
                             Quantity
                         </label>
 
-                        <div class="flex gap-3 mt-2">
+                        <div class="mt-2 flex gap-3">
 
                             <input id="quantity" name="quantity" type="number" min="1" max="{{ $product->stock }}"
                                 value="1" class="w-24 rounded-md border-gray-300">
