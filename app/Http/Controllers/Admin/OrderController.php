@@ -46,7 +46,7 @@ class OrderController extends Controller
         }
 
         $orders = $query
-            ->latest()
+            ->oldest()
             ->paginate(15)
             ->withQueryString();
 

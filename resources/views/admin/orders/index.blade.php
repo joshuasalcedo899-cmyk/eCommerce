@@ -99,10 +99,57 @@
             </div>
 
             {{-- Orders --}}
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+            <div>
 
                 @if ($orders->count())
 
+                    <div class="mb-6 space-y-3">
+                        @foreach ($orders as $order)
+                            @php
+                                $statusClasses = [
+                                    'pending' => 'bg-yellow-100 text-yellow-800',
+                                    'processing' => 'bg-blue-100 text-blue-800',
+                                    'shipped' => 'bg-purple-100 text-purple-800',
+                                    'delivered' => 'bg-green-100 text-green-800',
+                                    'cancelled' => 'bg-red-100 text-red-800',
+                                    'returned' => 'bg-orange-100 text-orange-800',
+                                ];
+                            @endphp
+
+                            <a href="{{ route('admin.orders.show', $order) }}"
+                                class="block rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Order</p>
+                                        <h3 class="mt-1 truncate text-base font-semibold text-gray-900">{{ $order->order_number }}</h3>
+                                        <p class="mt-2 text-sm text-gray-500">{{ $order->created_at->format('M d, Y h:i A') }}</p>
+                                    </div>
+
+                                    <div class="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
+                                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClasses[$order->status] ?? 'bg-gray-100 text-gray-800' }}">
+                                            {{ ucfirst($order->status) }}
+                                        </span>
+                                        <span class="text-lg font-bold text-gray-900">₱{{ number_format($order->total, 2) }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 grid gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2">
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer</p>
+                                        <p class="mt-1 text-sm font-medium text-gray-900">{{ $order->user->name }}</p>
+                                        <p class="text-sm text-gray-500">{{ $order->user->email }}</p>
+                                    </div>
+                                    <div class="sm:text-right">
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Payment</p>
+                                        <p class="mt-1 text-sm font-medium text-gray-900">{{ $order->payment_method === 'wallet' ? 'E-Wallet' : ($order->payment_method === 'cod' ? 'Cash on Delivery' : ucfirst($order->payment_method)) }}</p>
+                                        <p class="mt-1 text-sm font-medium text-gray-700">View order details →</p>
+                                    </div>
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+
+                    @if (false)
                     <div class="overflow-x-auto">
 
                         <table class="min-w-full divide-y divide-gray-200">
@@ -204,6 +251,7 @@
                         </table>
 
                     </div>
+                    @endif
 
                     <div class="p-6">
                         {{ $orders->links() }}
